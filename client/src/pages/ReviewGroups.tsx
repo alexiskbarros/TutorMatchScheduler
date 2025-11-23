@@ -3,62 +3,83 @@ import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { ProposedGroup } from "@shared/schema";
+
+function formatTimeSlot(group: ProposedGroup): string {
+  const dayMap: Record<string, string> = {
+    monday: 'Mon',
+    tuesday: 'Tue',
+    wednesday: 'Wed',
+    thursday: 'Thu',
+    friday: 'Fri',
+  };
+  
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+  
+  return `${dayMap[group.timeSlot.day]} ${formatTime(group.timeSlot.start)} - ${formatTime(group.timeSlot.end)}`;
+}
 
 export default function ReviewGroups() {
   const { toast } = useToast();
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   
-  const [groups, setGroups] = useState([
-    {
-      groupId: "group-1",
-      course: "MATH 1505 - Calculus I",
-      timeSlot: "Mon 2:00 PM - 3:00 PM",
-      peer: {
-        id: "peer-1",
-        name: "Sarah Johnson",
-        email: "sarah.johnson@mtroyal.ca"
-      },
-      learners: [
-        { id: "l1", name: "Alex Chen", email: "alex.chen@mtroyal.ca" },
-        { id: "l2", name: "Emma Wilson", email: "emma.wilson@mtroyal.ca" },
-        { id: "l3", name: "Marcus Brown", email: "marcus.brown@mtroyal.ca" }
-      ]
+  const { data: groupsData, isLoading } = useQuery<{ success: boolean; groups: ProposedGroup[] }>({
+    queryKey: ['/api/groups'],
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      const response = await apiRequest('POST', `/api/groups/${groupId}/approve`);
+      return response.json();
     },
-    {
-      groupId: "group-2",
-      course: "COMP 1501 - Introduction to Programming",
-      timeSlot: "Wed 10:00 AM - 11:00 AM",
-      peer: {
-        id: "peer-2",
-        name: "David Martinez",
-        email: "david.martinez@mtroyal.ca"
-      },
-      learners: [
-        { id: "l4", name: "Sophie Taylor", email: "sophie.taylor@mtroyal.ca" },
-        { id: "l5", name: "James Anderson", email: "james.anderson@mtroyal.ca" }
-      ]
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
     },
-    {
-      groupId: "group-3",
-      course: "PHYS 2201 - University Physics",
-      timeSlot: "Fri 1:00 PM - 2:00 PM",
-      peer: {
-        id: "peer-3",
-        name: "Lisa Wang",
-        email: "lisa.wang@mtroyal.ca"
-      },
-      learners: [
-        { id: "l6", name: "Daniel Kim", email: "daniel.kim@mtroyal.ca" },
-        { id: "l7", name: "Olivia Davis", email: "olivia.davis@mtroyal.ca" },
-        { id: "l8", name: "Noah Rodriguez", email: "noah.rodriguez@mtroyal.ca" },
-        { id: "l9", name: "Ava Martinez", email: "ava.martinez@mtroyal.ca" }
-      ]
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      const response = await apiRequest('POST', `/api/groups/${groupId}/reject`);
+      return response.json();
     },
-  ]);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
+      toast({
+        title: "Group Rejected",
+        description: "Participants have been re-queued for future matching runs.",
+        variant: "destructive"
+      });
+    },
+  });
+
+  const groups = groupsData?.groups || [] as ProposedGroup[];
+
+  const transformedGroups = groups.map((g: ProposedGroup) => ({
+    groupId: g.id,
+    course: `${g.courseCode} - ${g.instructor}`,
+    timeSlot: formatTimeSlot(g),
+    peer: {
+      id: g.peerId,
+      name: g.peerName,
+      email: g.peerEmail,
+    },
+    learners: g.learners.map((l: { id: string; name: string; email: string }) => ({
+      id: l.id,
+      name: l.name,
+      email: l.email,
+    })),
+  }));
 
   const handleApprove = (groupId: string) => {
-    const group = groups.find(g => g.groupId === groupId);
+    const group = transformedGroups.find(g => g.groupId === groupId);
     if (group) {
       setSelectedGroup(group);
       setEmailModalOpen(true);
@@ -66,22 +87,20 @@ export default function ReviewGroups() {
   };
 
   const handleReject = (groupId: string) => {
-    console.log('Rejecting group:', groupId);
-    setGroups(groups.filter(g => g.groupId !== groupId));
-    toast({
-      title: "Group Rejected",
-      description: "Participants have been re-queued for future matching runs.",
-      variant: "destructive"
-    });
+    rejectMutation.mutate(groupId);
   };
 
   const handleEmailConfirm = (sendCopy: boolean) => {
     console.log('Sending emails, send copy:', sendCopy);
     if (selectedGroup) {
-      setGroups(groups.filter(g => g.groupId !== selectedGroup.groupId));
-      toast({
-        title: "Group Approved",
-        description: `Email notifications sent to all ${selectedGroup.learners.length + 1} participants.`,
+      approveMutation.mutate(selectedGroup.groupId, {
+        onSuccess: () => {
+          setEmailModalOpen(false);
+          toast({
+            title: "Group Approved",
+            description: `Email notifications sent to all ${selectedGroup.learners.length + 1} participants.`,
+          });
+        },
       });
     }
   };
@@ -96,11 +115,15 @@ export default function ReviewGroups() {
           </p>
         </div>
         <Badge variant="secondary" className="text-sm" data-testid="badge-pending-count">
-          {groups.length} Pending
+          {transformedGroups.length} Pending
         </Badge>
       </div>
 
-      {groups.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      ) : transformedGroups.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground" data-testid="text-no-groups">
             No pending groups to review. Start a matching run to generate new groups.
@@ -108,7 +131,7 @@ export default function ReviewGroups() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {groups.map((group) => (
+          {transformedGroups.map((group: any) => (
             <GroupCard
               key={group.groupId}
               {...group}
