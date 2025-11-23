@@ -3,6 +3,7 @@ import type {
   LearningPeer,
   ClassSchedule,
   ProposedGroup,
+  InsertProposedGroup,
   UnmatchedParticipant,
   TimeSlot,
 } from '@shared/schema';
@@ -13,7 +14,6 @@ import {
   instructorsMatch,
   peerCanTeach,
 } from './matchingUtils';
-import { randomUUID } from 'crypto';
 
 interface MatchingInput {
   requests: LearnerRequest[];
@@ -23,7 +23,7 @@ interface MatchingInput {
 }
 
 interface MatchingResult {
-  groups: ProposedGroup[];
+  groups: InsertProposedGroup[];
   unmatched: UnmatchedParticipant[];
 }
 
@@ -55,7 +55,7 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
     assignedGroups: peer.groups || 0, // Start with existing group count
   }));
   
-  const groups: ProposedGroup[] = [];
+  const groups: InsertProposedGroup[] = [];
   const matched = new Set<string>(); // Track matched learner emails
   const unmatched: UnmatchedParticipant[] = [];
   
@@ -138,7 +138,7 @@ function matchLearnersWithPeers(
   courseCode: string,
   requiredInstructor: string | null,
   instructorMatchRequired: boolean,
-  groups: ProposedGroup[],
+  groups: InsertProposedGroup[],
   matched: Set<string>,
   unmatched: UnmatchedParticipant[]
 ): void {
@@ -240,7 +240,7 @@ function tryFormGroup(
   peer: PeerWithSchedule,
   courseCode: string,
   instructor: string
-): ProposedGroup | null {
+): InsertProposedGroup | null {
   // Collect all schedules
   const allSchedules: ClassSchedule[] = [];
   
@@ -267,9 +267,8 @@ function tryFormGroup(
     return null; // No common time slot found
   }
   
-  // Create the proposed group
+  // Create the proposed group (without id and status - those are added by storage)
   return {
-    id: randomUUID(),
     courseCode,
     instructor,
     peerId: peer.email,
@@ -281,7 +280,6 @@ function tryFormGroup(
       email: l.email,
     })),
     timeSlot: bestSlot,
-    status: 'pending' as const,
   };
 }
 

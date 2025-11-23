@@ -12,7 +12,15 @@ export interface IStorage {
   createMatchingRun(run: InsertMatchingRun): Promise<MatchingRun>;
   getMatchingRun(id: string): Promise<MatchingRun | undefined>;
   getAllMatchingRuns(): Promise<MatchingRun[]>;
+  getLatestMatchingRun(): Promise<MatchingRun | undefined>;
   updateMatchingRunStatus(id: string, status: 'running' | 'completed' | 'failed'): Promise<void>;
+  updateMatchingRunMetrics(id: string, metrics: {
+    totalLearners: number;
+    totalPeers: number;
+    matchedLearners: number;
+    unmatchedLearners: number;
+    proposedGroups: number;
+  }): Promise<void>;
   
   // Proposed Groups
   createGroup(group: InsertProposedGroup): Promise<ProposedGroup>;
@@ -62,10 +70,33 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getLatestMatchingRun(): Promise<MatchingRun | undefined> {
+    const runs = await this.getAllMatchingRuns();
+    return runs[0];
+  }
+
   async updateMatchingRunStatus(id: string, status: 'running' | 'completed' | 'failed'): Promise<void> {
     const run = this.matchingRuns.get(id);
     if (run) {
       run.status = status;
+      this.matchingRuns.set(id, run);
+    }
+  }
+
+  async updateMatchingRunMetrics(id: string, metrics: {
+    totalLearners: number;
+    totalPeers: number;
+    matchedLearners: number;
+    unmatchedLearners: number;
+    proposedGroups: number;
+  }): Promise<void> {
+    const run = this.matchingRuns.get(id);
+    if (run) {
+      run.totalLearners = metrics.totalLearners;
+      run.totalPeers = metrics.totalPeers;
+      run.matchedLearners = metrics.matchedLearners;
+      run.unmatchedLearners = metrics.unmatchedLearners;
+      run.proposedGroups = metrics.proposedGroups;
       this.matchingRuns.set(id, run);
     }
   }

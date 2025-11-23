@@ -58,16 +58,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           await storage.setUnmatchedParticipants(run.id, result.unmatched);
 
-          // Update run record
+          // Update run record with metrics
+          const matchedLearners = result.groups.reduce((sum, g) => sum + g.learners.length, 0);
+          const unmatchedLearners = result.unmatched.filter(u => u.role === 'Learner').length;
+          
+          await storage.updateMatchingRunMetrics(run.id, {
+            totalLearners: requests.length,
+            totalPeers: peers.length,
+            matchedLearners,
+            unmatchedLearners,
+            proposedGroups: result.groups.length,
+          });
+          
           await storage.updateMatchingRunStatus(run.id, 'completed');
-          const updatedRun = await storage.getMatchingRun(run.id);
-          if (updatedRun) {
-            updatedRun.totalLearners = requests.length;
-            updatedRun.totalPeers = peers.length;
-            updatedRun.matchedLearners = result.groups.reduce((sum, g) => sum + g.learners.length, 0);
-            updatedRun.unmatchedLearners = result.unmatched.filter(u => u.role === 'Learner').length;
-            updatedRun.proposedGroups = result.groups.length;
-          }
 
           console.log('Matching run completed successfully');
         } catch (error) {
@@ -104,9 +107,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Serialize date to string for JSON
+      const serializedRun = {
+        ...run,
+        timestamp: run.timestamp.toISOString(),
+      };
+
       res.json({
         success: true,
-        run,
+        run: serializedRun,
       });
     } catch (error) {
       console.error('Error fetching matching run:', error);
@@ -121,9 +130,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/matching-runs", async (req, res) => {
     try {
       const runs = await storage.getAllMatchingRuns();
+      
+      // Serialize dates to strings for JSON
+      const serializedRuns = runs.map(run => ({
+        ...run,
+        timestamp: run.timestamp.toISOString(),
+      }));
+      
       res.json({
         success: true,
-        runs,
+        runs: serializedRuns,
       });
     } catch (error) {
       console.error('Error fetching matching runs:', error);

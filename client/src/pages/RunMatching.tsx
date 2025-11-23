@@ -1,15 +1,35 @@
 import { MatchingRunPanel } from "@/components/MatchingRunPanel";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function RunMatching() {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [lastRun] = useState(new Date('2024-01-15T14:30:00'));
-  const [dataSourceSynced, setDataSourceSynced] = useState(new Date('2024-01-17T09:15:00'));
+  const [dataSourceSynced, setDataSourceSynced] = useState<Date | undefined>(undefined);
   const { toast } = useToast();
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { data: latestRunData } = useQuery<{ success: boolean; runs: any[] }>({
+    queryKey: ['/api/matching-runs'],
+  });
+
+  const latestRun = latestRunData?.runs?.[0];
+  const lastRun = latestRun ? new Date(latestRun.timestamp) : undefined;
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const startRunMutation = useMutation({
     mutationFn: async () => {
@@ -25,23 +45,70 @@ export default function RunMatching() {
       
       const runId = data.runId;
       
-      const checkProgress = setInterval(async () => {
+      // Clear any existing polling
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+      }
+      
+      const cleanupPolling = () => {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        if (pollTimeoutRef.current) {
+          clearTimeout(pollTimeoutRef.current);
+          pollTimeoutRef.current = null;
+        }
+      };
+      
+      let failureCount = 0;
+      const MAX_FAILURES = 3;
+      
+      pollIntervalRef.current = setInterval(async () => {
         try {
           const response = await fetch(`/api/matching-runs/${runId}`);
+          
+          if (!response.ok) {
+            failureCount++;
+            console.error(`Failed to fetch run status (${failureCount}/${MAX_FAILURES}):`, response.statusText);
+            
+            if (failureCount >= MAX_FAILURES) {
+              cleanupPolling();
+              setIsRunning(false);
+              setProgress(0);
+              toast({
+                title: "Error",
+                description: "Failed to check matching run status. Please refresh the page.",
+                variant: "destructive",
+              });
+            }
+            return;
+          }
+          
+          // Reset failure count on success
+          failureCount = 0;
+          
           const result = await response.json();
           
           if (result.success && result.run) {
             if (result.run.status === 'completed') {
-              clearInterval(checkProgress);
+              cleanupPolling();
               setIsRunning(false);
               setProgress(100);
+              queryClient.invalidateQueries({ queryKey: ['/api/matching-runs'] });
+              queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
+              queryClient.invalidateQueries({ queryKey: ['/api/unmatched'] });
               toast({
                 title: "Matching Complete",
                 description: `Successfully matched ${result.run.matchedLearners} learners into ${result.run.proposedGroups} groups.`,
               });
             } else if (result.run.status === 'failed') {
-              clearInterval(checkProgress);
+              cleanupPolling();
               setIsRunning(false);
+              setProgress(0);
               toast({
                 title: "Matching Failed",
                 description: "An error occurred during the matching process.",
@@ -52,17 +119,37 @@ export default function RunMatching() {
             }
           }
         } catch (error) {
-          console.error('Error checking progress:', error);
+          failureCount++;
+          console.error(`Error checking progress (${failureCount}/${MAX_FAILURES}):`, error);
+          
+          if (failureCount >= MAX_FAILURES) {
+            cleanupPolling();
+            setIsRunning(false);
+            setProgress(0);
+            toast({
+              title: "Error",
+              description: "Failed to check matching run status. Please refresh the page.",
+              variant: "destructive",
+            });
+          }
         }
       }, 1000);
       
-      setTimeout(() => {
-        clearInterval(checkProgress);
+      pollTimeoutRef.current = setTimeout(() => {
+        cleanupPolling();
+        setIsRunning(false);
+        setProgress(0);
+        toast({
+          title: "Timeout",
+          description: "Matching run is taking longer than expected. Please check the status manually.",
+          variant: "destructive",
+        });
       }, 60000);
     },
     onError: (error) => {
       console.error('Error starting matching run:', error);
       setIsRunning(false);
+      setProgress(0);
       toast({
         title: "Error",
         description: "Failed to start matching run. Please try again.",
@@ -78,14 +165,17 @@ export default function RunMatching() {
     },
     onSuccess: (data: any) => {
       console.log('Data synced:', data);
-      setDataSourceSynced(new Date());
+      setDataSourceSynced(new Date(data.timestamp));
       toast({
         title: "Data Synced",
         description: `Successfully synced ${data.data.requests} requests, ${data.data.peers} peers.`,
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/matching-runs'] });
     },
     onError: (error) => {
       console.error('Error syncing data:', error);
+      setProgress(0);
+      setIsRunning(false);
       toast({
         title: "Error",
         description: "Failed to sync data from Google Sheets.",
@@ -117,7 +207,7 @@ export default function RunMatching() {
         <MatchingRunPanel
           lastRun={lastRun}
           dataSourceSynced={dataSourceSynced}
-          isRunning={isRunning}
+          isRunning={isRunning || startRunMutation.isPending}
           progress={progress}
           onStartRun={handleStartRun}
           onSyncData={handleSyncData}
