@@ -125,6 +125,9 @@ export async function loadRequests(): Promise<LearnerRequest[]> {
   const [header, ...dataRows] = rows;
   const requests: LearnerRequest[] = [];
   
+  console.log('Requests Sheet - Header row:', header);
+  console.log('Requests Sheet - First 3 data rows:', dataRows.slice(0, 3));
+  
   for (const row of dataRows) {
     const email = (row[1] || '').trim();
     
@@ -167,6 +170,9 @@ export async function loadLearningPeers(): Promise<LearningPeer[]> {
   
   const [header, ...dataRows] = rows;
   const peers: LearningPeer[] = [];
+  
+  console.log('Learning Peers Sheet - Header row:', header);
+  console.log('Learning Peers Sheet - First 3 data rows:', dataRows.slice(0, 3));
   
   for (const row of dataRows) {
     const email = (row[0] || '').trim();
