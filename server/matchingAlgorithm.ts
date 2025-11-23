@@ -170,7 +170,7 @@ function matchLearnersWithPeers(
     for (const learner of availableLearners) {
       if (!matched.has(learner.email)) {
         unmatched.push({
-          id: learner.email,
+          id: `learner-${learner.email}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           name: `${learner.firstName} ${learner.lastName}`,
           email: learner.email,
           role: 'Learner',
@@ -224,7 +224,7 @@ function matchLearnersWithPeers(
   for (const learner of availableLearners) {
     if (!matched.has(learner.email)) {
       unmatched.push({
-        id: learner.email,
+        id: `learner-${learner.email}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: `${learner.firstName} ${learner.lastName}`,
         email: learner.email,
         role: 'Learner',
