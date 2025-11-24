@@ -114,7 +114,7 @@ export async function loadRequests(): Promise<LearnerRequest[]> {
   
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Requests!A:I',
+    range: 'Requests!A:V', // Extended to column V to include Section Number at column 21
   });
   
   const rows = response.data.values || [];
@@ -125,11 +125,8 @@ export async function loadRequests(): Promise<LearnerRequest[]> {
   const [header, ...dataRows] = rows;
   const requests: LearnerRequest[] = [];
   
-  console.log('Requests Sheet - Header row:', header);
-  console.log('Requests Sheet - First 3 data rows:', dataRows.slice(0, 3));
-  
   for (const row of dataRows) {
-    const email = (row[1] || '').trim();
+    const email = (row[7] || '').trim(); // Column 8 in Excel = index 7
     
     // Skip test data
     if (email === 'chickey@test') {
@@ -141,14 +138,14 @@ export async function loadRequests(): Promise<LearnerRequest[]> {
     }
     
     requests.push({
-      timestamp: (row[0] || '').trim(),
-      email,
-      firstName: (row[2] || '').trim(),
-      lastName: (row[3] || '').trim(),
-      courseCode: (row[4] || '').trim(),
-      instructor: (row[5] || '').trim(),
-      instructorMatchRequired: (row[6] || '').trim().toUpperCase() === 'Y',
-      sectionNumber: (row[7] || '').trim() || undefined,
+      timestamp: (row[6] || '').trim(),     // Column 7 = index 6
+      email,                                  // Column 8 = index 7
+      firstName: (row[8] || '').trim(),      // Column 9 = index 8
+      lastName: (row[10] || '').trim(),      // Column 11 = index 10
+      courseCode: (row[16] || '').trim(),    // Column 17 = index 16
+      instructor: (row[17] || '').trim(),    // Column 18 = index 17
+      instructorMatchRequired: (row[18] || '').trim().toUpperCase() === 'Y', // Column 19 = index 18
+      sectionNumber: (row[21] || '').trim() || undefined, // Column 22 = index 21
     });
   }
   
@@ -160,7 +157,7 @@ export async function loadLearningPeers(): Promise<LearningPeer[]> {
   
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Learning Peers!A:K',
+    range: 'Learning Peers!A:Q', // Extended to column Q to include "Other Courses"
   });
   
   const rows = response.data.values || [];
@@ -171,11 +168,8 @@ export async function loadLearningPeers(): Promise<LearningPeer[]> {
   const [header, ...dataRows] = rows;
   const peers: LearningPeer[] = [];
   
-  console.log('Learning Peers Sheet - Header row:', header);
-  console.log('Learning Peers Sheet - First 3 data rows:', dataRows.slice(0, 3));
-  
   for (const row of dataRows) {
-    const email = (row[0] || '').trim();
+    const email = (row[1] || '').trim(); // Column 2 in Excel = index 1
     
     // Skip test data
     if (email === 'chickey@test') {
@@ -186,20 +180,20 @@ export async function loadLearningPeers(): Promise<LearningPeer[]> {
       continue;
     }
     
-    const otherCourses = parseOtherCourses(row[9] || '');
+    const otherCourses = parseOtherCourses(row[15] || ''); // Column 16 = index 15
     
     peers.push({
-      email,
-      preferredName: (row[1] || '').trim(),
-      lastName: (row[2] || '').trim(),
-      groups: parseInt(row[3] || '0', 10) || 0,
-      courseCode1: (row[4] || '').trim() || undefined,
-      instructor1: (row[5] || '').trim() || undefined,
-      courseCode2: (row[6] || '').trim() || undefined,
-      instructor2: (row[7] || '').trim() || undefined,
-      courseCode3: (row[8] || '').trim() || undefined,
-      instructor3: (row[9] || '').trim() || undefined,
-      otherCourses,
+      email,                                     // Column 2 = index 1
+      preferredName: (row[4] || '').trim(),     // Column 5 (Preferred Name) = index 4
+      lastName: (row[5] || '').trim(),          // Column 6 = index 5
+      groups: parseInt(row[6] || '0', 10) || 0, // Column 7 = index 6
+      courseCode1: (row[9] || '').trim() || undefined,  // Column 10 = index 9
+      instructor1: (row[10] || '').trim() || undefined, // Column 11 = index 10
+      courseCode2: (row[11] || '').trim() || undefined, // Column 12 = index 11
+      instructor2: (row[12] || '').trim() || undefined, // Column 13 = index 12
+      courseCode3: (row[13] || '').trim() || undefined, // Column 14 = index 13
+      instructor3: (row[14] || '').trim() || undefined, // Column 15 = index 14
+      otherCourses,                             // Column 16 = index 15
     });
   }
   
