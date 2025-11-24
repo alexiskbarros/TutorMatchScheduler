@@ -23,7 +23,7 @@ export interface IStorage {
   }): Promise<void>;
   
   // Proposed Groups
-  createGroup(group: InsertProposedGroup): Promise<ProposedGroup>;
+  createGroup(runId: string, group: InsertProposedGroup): Promise<ProposedGroup>;
   getGroup(id: string): Promise<ProposedGroup | undefined>;
   getGroupsByRunId(runId: string): Promise<ProposedGroup[]>;
   updateGroupStatus(id: string, status: 'pending' | 'approved' | 'rejected'): Promise<void>;
@@ -41,14 +41,12 @@ export class MemStorage implements IStorage {
   private proposedGroups: Map<string, ProposedGroup>;
   private unmatchedByRun: Map<string, UnmatchedParticipant[]>;
   private groupsByRun: Map<string, string[]>; // runId -> groupIds[]
-  private latestRunId: string | null;
 
   constructor() {
     this.matchingRuns = new Map();
     this.proposedGroups = new Map();
     this.unmatchedByRun = new Map();
     this.groupsByRun = new Map();
-    this.latestRunId = null;
   }
 
   // Matching Runs
@@ -56,7 +54,6 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const run: MatchingRun = { ...insertRun, id };
     this.matchingRuns.set(id, run);
-    this.latestRunId = id;
     this.groupsByRun.set(id, []);
     return run;
   }
@@ -103,17 +100,15 @@ export class MemStorage implements IStorage {
   }
 
   // Proposed Groups
-  async createGroup(insertGroup: InsertProposedGroup): Promise<ProposedGroup> {
+  async createGroup(runId: string, insertGroup: InsertProposedGroup): Promise<ProposedGroup> {
     const id = randomUUID();
     const group: ProposedGroup = { ...insertGroup, id, status: 'pending' };
     this.proposedGroups.set(id, group);
     
-    // Associate with latest run if available
-    if (this.latestRunId) {
-      const runGroups = this.groupsByRun.get(this.latestRunId) || [];
-      runGroups.push(id);
-      this.groupsByRun.set(this.latestRunId, runGroups);
-    }
+    // Associate with the provided run ID
+    const runGroups = this.groupsByRun.get(runId) || [];
+    runGroups.push(id);
+    this.groupsByRun.set(runId, runGroups);
     
     return group;
   }
@@ -165,10 +160,11 @@ export class MemStorage implements IStorage {
   }
 
   async getLatestUnmatchedParticipants(): Promise<UnmatchedParticipant[]> {
-    if (!this.latestRunId) {
+    const latestRun = await this.getLatestMatchingRun();
+    if (!latestRun) {
       return [];
     }
-    return this.unmatchedByRun.get(this.latestRunId) || [];
+    return this.unmatchedByRun.get(latestRun.id) || [];
   }
 }
 

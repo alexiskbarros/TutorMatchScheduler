@@ -20,7 +20,6 @@ neonConfig.webSocketConstructor = ws;
 
 export class DbStorage implements IStorage {
   private db;
-  private latestRunId: string | null = null;
 
   constructor() {
     if (!process.env.DATABASE_URL) {
@@ -36,8 +35,6 @@ export class DbStorage implements IStorage {
       .insert(matchingRunsTable)
       .values(insertRun)
       .returning();
-    
-    this.latestRunId = run.id;
     
     return {
       id: run.id,
@@ -115,13 +112,7 @@ export class DbStorage implements IStorage {
   }
 
   // Proposed Groups
-  async createGroup(insertGroup: InsertProposedGroup): Promise<ProposedGroup> {
-    console.log('[DbStorage.createGroup] latestRunId:', this.latestRunId);
-    
-    if (!this.latestRunId) {
-      throw new Error("No active matching run - create a run first");
-    }
-
+  async createGroup(runId: string, insertGroup: InsertProposedGroup): Promise<ProposedGroup> {
     const [group] = await this.db
       .insert(proposedGroupsTable)
       .values({
@@ -134,7 +125,7 @@ export class DbStorage implements IStorage {
         timeSlotDay: insertGroup.timeSlot.day,
         timeSlotStart: insertGroup.timeSlot.start,
         timeSlotEnd: insertGroup.timeSlot.end,
-        runId: this.latestRunId,
+        runId: runId,
       })
       .returning();
 

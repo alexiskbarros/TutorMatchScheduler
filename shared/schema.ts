@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { pgTable, text, integer, timestamp, uuid, jsonb, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, uuid, jsonb, pgEnum, index } from "drizzle-orm/pg-core";
 
 // Time slot format: "0830-0950"
 export const timeSlotSchema = z.object({
@@ -143,7 +143,11 @@ export const proposedGroupsTable = pgTable('proposed_groups', {
   timeSlotStart: text('time_slot_start').notNull(),
   timeSlotEnd: text('time_slot_end').notNull(),
   status: groupStatusEnum('status').notNull().default('pending'),
-});
+}, (table) => ({
+  runIdIdx: index('proposed_groups_run_id_idx').on(table.runId),
+  statusIdx: index('proposed_groups_status_idx').on(table.status),
+  courseCodeIdx: index('proposed_groups_course_code_idx').on(table.courseCode),
+}));
 
 export const unmatchedParticipantsTable = pgTable('unmatched_participants', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -155,4 +159,6 @@ export const unmatchedParticipantsTable = pgTable('unmatched_participants', {
   courseCode: text('course_code').notNull(),
   constraintFailure: text('constraint_failure').notNull(),
   suggestedAlternative: text('suggested_alternative'),
-});
+}, (table) => ({
+  runIdIdx: index('unmatched_participants_run_id_idx').on(table.runId),
+}));

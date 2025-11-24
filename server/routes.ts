@@ -53,7 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Store results
           for (const group of result.groups) {
-            await storage.createGroup(group);
+            await storage.createGroup(run.id, group);
           }
 
           await storage.setUnmatchedParticipants(run.id, result.unmatched);
