@@ -6,13 +6,10 @@ import type {
   TimeSlot,
 } from '@shared/schema';
 
-let connectionSettings: any;
-
-async function getAccessToken() {
-  if (connectionSettings && connectionSettings.settings.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
-    return connectionSettings.settings.access_token;
-  }
-  
+// WARNING: Never cache this client.
+// Access tokens expire, so a new client must be created each time.
+// Always call this function again to get a fresh client.
+async function getGoogleSheetClient() {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME
   const xReplitToken = process.env.REPL_IDENTITY 
     ? 'repl ' + process.env.REPL_IDENTITY 
@@ -24,7 +21,7 @@ async function getAccessToken() {
     throw new Error('X_REPLIT_TOKEN not found for repl/depl');
   }
 
-  connectionSettings = await fetch(
+  const connectionSettings = await fetch(
     'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=google-sheet',
     {
       headers: {
@@ -39,11 +36,6 @@ async function getAccessToken() {
   if (!connectionSettings || !accessToken) {
     throw new Error('Google Sheet not connected');
   }
-  return accessToken;
-}
-
-async function getGoogleSheetClient() {
-  const accessToken = await getAccessToken();
 
   const oauth2Client = new google.auth.OAuth2();
   oauth2Client.setCredentials({
@@ -141,7 +133,7 @@ export async function loadRequests(): Promise<LearnerRequest[]> {
       timestamp: (row[6] || '').trim(),     // Column 7 = index 6
       email,                                  // Column 8 = index 7
       firstName: (row[8] || '').trim(),      // Column 9 = index 8
-      lastName: (row[10] || '').trim(),      // Column 11 = index 10
+      lastName: (row[11] || '').trim(),      // Column 12 = index 11
       courseCode: (row[16] || '').trim(),    // Column 17 = index 16
       instructor: (row[17] || '').trim(),    // Column 18 = index 17
       instructorMatchRequired: (row[18] || '').trim().toUpperCase() === 'Y', // Column 19 = index 18
