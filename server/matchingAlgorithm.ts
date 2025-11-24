@@ -86,7 +86,6 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
   
   const groups: InsertProposedGroup[] = [];
   const matched = new Set<string>(); // Track matched learner emails
-  const unmatched: UnmatchedParticipant[] = [];
   
   // Group learners by course code and instructor match requirement
   const learnersByCourse = groupLearnersByCourse(learnersWithSchedules);
@@ -127,8 +126,7 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
           instructor,
           true,
           groups,
-          matched,
-          unmatched
+          matched
         );
       }
     } else {
@@ -140,9 +138,23 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
         null,
         false,
         groups,
-        matched,
-        unmatched
+        matched
       );
+    }
+  }
+  
+  // Build unmatched list AFTER all matching is complete
+  const unmatched: UnmatchedParticipant[] = [];
+  for (const learner of learnersWithSchedules) {
+    if (!matched.has(learner.email)) {
+      unmatched.push({
+        id: `learner-${learner.email}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: `${learner.firstName} ${learner.lastName}`,
+        email: learner.email,
+        role: 'Learner',
+        courseCode: learner.courseCode,
+        constraintFailure: 'No available match - Schedule conflicts, no eligible peers, or peer capacity exhausted',
+      });
     }
   }
   
@@ -194,8 +206,7 @@ function matchLearnersWithPeers(
   requiredInstructor: string | null,
   instructorMatchRequired: boolean,
   groups: InsertProposedGroup[],
-  matched: Set<string>,
-  unmatched: UnmatchedParticipant[]
+  matched: Set<string>
 ): void {
   // Filter available learners (not yet matched)
   const availableLearners = learners.filter(l => !matched.has(l.email));
@@ -223,21 +234,7 @@ function matchLearnersWithPeers(
   
   
   if (eligiblePeers.length === 0) {
-    // No peers available - mark all as unmatched
-    for (const learner of availableLearners) {
-      if (!matched.has(learner.email)) {
-        unmatched.push({
-          id: `learner-${learner.email}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: `${learner.firstName} ${learner.lastName}`,
-          email: learner.email,
-          role: 'Learner',
-          courseCode: learner.courseCode,
-          constraintFailure: instructorMatchRequired
-            ? `Instructor Match Required - No peer available for instructor: ${requiredInstructor}`
-            : `No peers available for course: ${courseCode}`,
-        });
-      }
-    }
+    // No peers available for this course/instructor combination
     return;
   }
   
@@ -289,20 +286,6 @@ function matchLearnersWithPeers(
           break; // Found a group, move to next peer
         }
       }
-    }
-  }
-  
-  // Any remaining learners are unmatched
-  for (const learner of availableLearners) {
-    if (!matched.has(learner.email)) {
-      unmatched.push({
-        id: `learner-${learner.email}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        name: `${learner.firstName} ${learner.lastName}`,
-        email: learner.email,
-        role: 'Learner',
-        courseCode: learner.courseCode,
-        constraintFailure: 'No available time slots - Schedule conflicts with all available peers',
-      });
     }
   }
 }
