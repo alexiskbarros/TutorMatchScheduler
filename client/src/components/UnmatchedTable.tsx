@@ -17,7 +17,7 @@ interface UnmatchedParticipant {
   name: string;
   email: string;
   role: 'Learner' | 'Peer';
-  course: string;
+  courseCode: string;
   constraintFailure: string;
   suggestedAlternative?: string;
 }
@@ -32,7 +32,7 @@ export function UnmatchedTable({ participants, onManualPlace }: UnmatchedTablePr
 
   const filteredParticipants = participants.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.courseCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.constraintFailure.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -83,7 +83,7 @@ export function UnmatchedTable({ participants, onManualPlace }: UnmatchedTablePr
                       {participant.role}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-sm">{participant.course}</TableCell>
+                  <TableCell className="font-mono text-sm">{participant.courseCode}</TableCell>
                   <TableCell>
                     <div className="flex items-start gap-2">
                       <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
