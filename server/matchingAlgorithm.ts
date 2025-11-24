@@ -11,6 +11,7 @@ import {
   findAvailableSlots,
   getScheduleForDay,
   isWithinPreferredProximity,
+  isBetweenClasses,
   instructorsMatch,
   peerCanTeach,
   normalizeInstructorName,
@@ -354,9 +355,30 @@ function findBestTimeSlot(schedules: ClassSchedule[]): {
     const availableSlots = findAvailableSlots(schedules, day);
     
     for (const slot of availableSlots) {
-      // Calculate preference score (prefer slots within 2 hours of classes)
-      const withinPreferred = isWithinPreferredProximity(slot, schedules, day);
-      const score = withinPreferred ? 1 : 0;
+      // Calculate preference score with improved prioritization:
+      // Score 3: Between classes (gap) - students prefer being already on campus
+      // Score 2: Within 1 hour of classes - convenient
+      // Score 1: Within 2 hours of classes - acceptable
+      // Score 0: Far from classes - requires special trip
+      let score = 0;
+      
+      // Check if ANY participant has this slot between their classes
+      let isBetweenClassesForAny = false;
+      for (const schedule of schedules) {
+        const daySchedule = getScheduleForDay(schedule, day);
+        if (isBetweenClasses(slot, daySchedule)) {
+          isBetweenClassesForAny = true;
+          break;
+        }
+      }
+      
+      if (isBetweenClassesForAny) {
+        score = 3; // BEST: Gap between classes
+      } else if (isWithinPreferredProximity(slot, schedules, day, 60)) {
+        score = 2; // Within 1 hour of classes
+      } else if (isWithinPreferredProximity(slot, schedules, day, 120)) {
+        score = 1; // Within 2 hours of classes
+      }
       
       if (!bestSlot || score > bestSlot.score) {
         bestSlot = { day, slot, score };

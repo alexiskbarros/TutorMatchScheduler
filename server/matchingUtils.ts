@@ -135,6 +135,37 @@ export function calculateClassProximity(
   return minDistance;
 }
 
+// Check if a time slot is between two classes (a gap in the schedule)
+// This is the most preferred slot type - student is already on campus
+export function isBetweenClasses(
+  sessionSlot: TimeSlot,
+  classSlots: TimeSlot[]
+): boolean {
+  if (classSlots.length < 2) {
+    return false;
+  }
+  
+  const sessionStart = timeToMinutes(sessionSlot.start);
+  const sessionEnd = timeToMinutes(sessionSlot.end);
+  
+  let hasClassBefore = false;
+  let hasClassAfter = false;
+  
+  for (const classSlot of classSlots) {
+    const classStart = timeToMinutes(classSlot.start);
+    const classEnd = timeToMinutes(classSlot.end);
+    
+    if (classEnd <= sessionStart) {
+      hasClassBefore = true;
+    }
+    if (classStart >= sessionEnd) {
+      hasClassAfter = true;
+    }
+  }
+  
+  return hasClassBefore && hasClassAfter;
+}
+
 // Check if a time slot is within preferred proximity (2 hours) of any class
 export function isWithinPreferredProximity(
   sessionSlot: TimeSlot,
