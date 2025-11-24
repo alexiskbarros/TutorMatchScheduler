@@ -13,6 +13,7 @@ import {
   isWithinPreferredProximity,
   instructorsMatch,
   peerCanTeach,
+  normalizeInstructorName,
 } from './matchingUtils';
 
 interface MatchingInput {
@@ -103,20 +104,8 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
   // Group learners by course code and instructor match requirement
   const learnersByCourse = groupLearnersByCourse(learnersWithSchedules);
   
-  // Sort course keys to prioritize instructor-required matches FIRST
-  // This ensures peers who can teach specific instructors are reserved for those learners
-  const sortedCourseKeys = Object.keys(learnersByCourse).sort((a, b) => {
-    const [, aRequired] = a.split('::');
-    const [, bRequired] = b.split('::');
-    // Process 'true' (instructor required) before 'false'
-    if (aRequired === 'true' && bRequired === 'false') return -1;
-    if (aRequired === 'false' && bRequired === 'true') return 1;
-    return 0;
-  });
-  
-  // Process each course group in priority order
-  for (const courseKey of sortedCourseKeys) {
-    const courseLearners = learnersByCourse[courseKey];
+  // Process each course group
+  for (const [courseKey, courseLearners] of Object.entries(learnersByCourse)) {
     const [courseCode, instructorMatchRequired] = courseKey.split('::');
     
     if (instructorMatchRequired === 'true') {
@@ -180,11 +169,12 @@ function groupByInstructor(
   const grouped: Record<string, LearnerWithSchedule[]> = {};
   
   for (const learner of learners) {
-    const instructor = learner.instructor;
-    if (!grouped[instructor]) {
-      grouped[instructor] = [];
+    // Normalize instructor name to handle case sensitivity
+    const normalizedInstructor = normalizeInstructorName(learner.instructor);
+    if (!grouped[normalizedInstructor]) {
+      grouped[normalizedInstructor] = [];
     }
-    grouped[instructor].push(learner);
+    grouped[normalizedInstructor].push(learner);
   }
   
   return grouped;
