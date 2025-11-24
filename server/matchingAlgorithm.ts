@@ -12,6 +12,7 @@ import {
   getScheduleForDay,
   isWithinPreferredProximity,
   isBetweenClasses,
+  isBetweenClassesForGroup,
   instructorsMatch,
   peerCanTeach,
   normalizeInstructorName,
@@ -350,15 +351,6 @@ function findBestTimeSlot(schedules: ClassSchedule[]): {
     score: number;
   } | null = null;
   
-  // DEBUG: Log schedule data for specific participants
-  const debugEmails = ['Student28@test', 'Student29@test', 'avasi101@test'];
-  for (const schedule of schedules) {
-    if (debugEmails.includes(schedule.email)) {
-      console.log(`[Schedule Debug] ${schedule.email} (${schedule.firstName})`);
-      console.log(`  Tuesday: ${JSON.stringify(schedule.tuesday)}`);
-    }
-  }
-  
   // Try each day
   for (const day of DAYS) {
     const availableSlots = findAvailableSlots(schedules, day);
@@ -371,17 +363,9 @@ function findBestTimeSlot(schedules: ClassSchedule[]): {
       // Score 0: Far from classes - requires special trip
       let score = 0;
       
-      // Check if ANY participant has this slot between their classes
-      let isBetweenClassesForAny = false;
-      for (const schedule of schedules) {
-        const daySchedule = getScheduleForDay(schedule, day);
-        if (isBetweenClasses(slot, daySchedule)) {
-          isBetweenClassesForAny = true;
-          break;
-        }
-      }
-      
-      if (isBetweenClassesForAny) {
+      // Check at GROUP level: Is this between classes for the group?
+      // (Anyone has class before AND anyone has class after)
+      if (isBetweenClassesForGroup(slot, schedules, day)) {
         score = 3; // BEST: Gap between classes
       } else if (isWithinPreferredProximity(slot, schedules, day, 60)) {
         score = 2; // Within 1 hour of classes

@@ -94,6 +94,12 @@ Preferred communication style: Simple, everyday language.
 - Fixed critical bug where instructor-flexible matching incorrectly rejected peers with different instructors (improved match rate from 4 to 21 learners)
 - Implemented instructor name normalization to prevent duplicate groups from case sensitivity
 - Added mixed cohort support to allow flexible learners to fill instructor-specific groups (maintains 21-learner throughput while honoring all instructor requirements)
+- Implemented intelligent time slot selection with gap detection:
+  - Score 3 (highest): Between classes - individual has classes both before/after OR group has classes within 90 min before/after
+  - Score 2: Within 1 hour of any class
+  - Score 1: Within 2 hours of any class
+  - Score 0: Far from all classes (>2 hours)
+  - Group-level gap detection maximizes convenience when different participants arrive from/stay for classes
 
 ### External Dependencies
 

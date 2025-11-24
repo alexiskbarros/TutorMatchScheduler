@@ -135,7 +135,7 @@ export function calculateClassProximity(
   return minDistance;
 }
 
-// Check if a time slot is between two classes (a gap in the schedule)
+// Check if a time slot is between classes for a single participant
 // This is the most preferred slot type - student is already on campus
 export function isBetweenClasses(
   sessionSlot: TimeSlot,
@@ -164,6 +164,55 @@ export function isBetweenClasses(
   }
   
   return hasClassBefore && hasClassAfter;
+}
+
+// Check if a time slot is between classes at the GROUP level
+// Returns true if:
+// - At least ONE person has it between their own classes (individual gap), OR
+// - The group has classes before AND after, AND those classes are close enough (within 90 min)
+//   to make it genuinely convenient (some arrive from class, others stay for next class)
+export function isBetweenClassesForGroup(
+  sessionSlot: TimeSlot,
+  allParticipantSchedules: ClassSchedule[],
+  day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'
+): boolean {
+  const sessionStart = timeToMinutes(sessionSlot.start);
+  const sessionEnd = timeToMinutes(sessionSlot.end);
+  
+  // First, check if ANY individual has this between their own classes
+  for (const schedule of allParticipantSchedules) {
+    const daySchedule = getScheduleForDay(schedule, day);
+    if (isBetweenClasses(sessionSlot, daySchedule)) {
+      return true; // Someone has it as a personal gap
+    }
+  }
+  
+  // If no individual gap, check for group-level convenience:
+  // Someone has class ending within 90 min before AND someone has class starting within 90 min after
+  let hasRecentClassBefore = false;
+  let hasUpcomingClassAfter = false;
+  const proximityWindow = 90; // minutes
+  
+  for (const schedule of allParticipantSchedules) {
+    const daySchedule = getScheduleForDay(schedule, day);
+    
+    for (const classSlot of daySchedule) {
+      const classStart = timeToMinutes(classSlot.start);
+      const classEnd = timeToMinutes(classSlot.end);
+      
+      // Class ends before session and within proximity window
+      if (classEnd <= sessionStart && (sessionStart - classEnd) <= proximityWindow) {
+        hasRecentClassBefore = true;
+      }
+      
+      // Class starts after session and within proximity window
+      if (classStart >= sessionEnd && (classStart - sessionEnd) <= proximityWindow) {
+        hasUpcomingClassAfter = true;
+      }
+    }
+  }
+  
+  return hasRecentClassBefore && hasUpcomingClassAfter;
 }
 
 // Check if a time slot is within preferred proximity (2 hours) of any class
