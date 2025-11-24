@@ -106,7 +106,12 @@ function groupLearnersByCourse(
   const grouped: Record<string, LearnerWithSchedule[]> = {};
   
   for (const learner of learners) {
-    const key = `${learner.courseCode}::${learner.instructorMatchRequired}`;
+    // If instructor field is blank/empty, treat as instructor match NOT required
+    // regardless of what the instructorMatchRequired flag says
+    const hasInstructor = learner.instructor && learner.instructor.trim() !== '';
+    const effectiveMatchRequired = hasInstructor && learner.instructorMatchRequired;
+    
+    const key = `${learner.courseCode}::${effectiveMatchRequired}`;
     if (!grouped[key]) {
       grouped[key] = [];
     }
