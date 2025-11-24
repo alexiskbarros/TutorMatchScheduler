@@ -27,6 +27,7 @@ export interface IStorage {
   getGroup(id: string): Promise<ProposedGroup | undefined>;
   getGroupsByRunId(runId: string): Promise<ProposedGroup[]>;
   updateGroupStatus(id: string, status: 'pending' | 'approved' | 'rejected'): Promise<void>;
+  updateGroup(id: string, updates: Partial<Omit<ProposedGroup, 'id' | 'status'>>): Promise<void>;
   deleteGroup(id: string): Promise<void>;
   
   // Unmatched Participants
@@ -133,6 +134,14 @@ export class MemStorage implements IStorage {
     if (group) {
       group.status = status;
       this.proposedGroups.set(id, group);
+    }
+  }
+
+  async updateGroup(id: string, updates: Partial<Omit<ProposedGroup, 'id' | 'status'>>): Promise<void> {
+    const group = this.proposedGroups.get(id);
+    if (group) {
+      const updatedGroup = { ...group, ...updates };
+      this.proposedGroups.set(id, updatedGroup);
     }
   }
 

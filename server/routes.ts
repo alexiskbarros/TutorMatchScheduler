@@ -244,6 +244,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PATCH /api/groups/:id - Update a group manually
+  app.patch("/api/groups/:id", async (req, res) => {
+    try {
+      const group = await storage.getGroup(req.params.id);
+      
+      if (!group) {
+        return res.status(404).json({
+          success: false,
+          error: 'Group not found',
+        });
+      }
+
+      // Update the group with provided fields
+      await storage.updateGroup(req.params.id, req.body);
+
+      res.json({
+        success: true,
+        message: 'Group updated successfully',
+        group: await storage.getGroup(req.params.id),
+      });
+    } catch (error) {
+      console.error('Error updating group:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   // GET /api/unmatched - Get unmatched participants
   app.get("/api/unmatched", async (req, res) => {
     try {
