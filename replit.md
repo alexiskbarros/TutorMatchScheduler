@@ -82,13 +82,18 @@ Preferred communication style: Simple, everyday language.
 4. Balance peer workloads across groups
 
 *Algorithm Approach*:
-- Greedy matching with constraint validation
-- Sort learners by constraint difficulty (instructor-required first)
-- For each learner, find compatible peers and schedule slots
-- Build groups incrementally, validating all constraints
-- Track unmatched participants with specific failure reasons
+- **Two-phase prioritization**: Process instructor-required groups first to reserve peers for learners with specific instructor needs
+- **Mixed cohort groups**: Instructor-flexible learners can join instructor-specific groups to maximize group sizes (e.g., 1 instructor-required learner + 3 flexible learners = group of 4)
+- **Combinatorial search**: For each potential group, try all combinations of 1-4 learners to find the best fit (limited to 20 combinations for performance)
+- **Backtracking**: When peers are reserved for instructor-required matches, any unused capacity remains available for later general matching
+- Track unmatched participants with specific failure reasons (schedule conflicts, no peers available, instructor mismatch)
 
-**Instructor Normalization**: Fuzzy matching for instructor names per course (e.g., "Marina Elliot", "Marina Elliott", "Dr. Elliott" treated as same instructor cluster)
+**Instructor Normalization**: Case-insensitive, whitespace-trimmed matching for instructor names (e.g., "Sarah Haughey", "Sarah haughey", "sarah haughey" all treated as same instructor)
+
+**Recent Improvements** (Nov 2025):
+- Fixed critical bug where instructor-flexible matching incorrectly rejected peers with different instructors (improved match rate from 4 to 21 learners)
+- Implemented instructor name normalization to prevent duplicate groups from case sensitivity
+- Added mixed cohort support to allow flexible learners to fill instructor-specific groups (maintains 21-learner throughput while honoring all instructor requirements)
 
 ### External Dependencies
 
