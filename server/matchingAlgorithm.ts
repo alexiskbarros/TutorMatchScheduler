@@ -103,8 +103,20 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
   // Group learners by course code and instructor match requirement
   const learnersByCourse = groupLearnersByCourse(learnersWithSchedules);
   
-  // Process each course group
-  for (const [courseKey, courseLearners] of Object.entries(learnersByCourse)) {
+  // Sort course keys to prioritize instructor-required matches FIRST
+  // This ensures peers who can teach specific instructors are reserved for those learners
+  const sortedCourseKeys = Object.keys(learnersByCourse).sort((a, b) => {
+    const [, aRequired] = a.split('::');
+    const [, bRequired] = b.split('::');
+    // Process 'true' (instructor required) before 'false'
+    if (aRequired === 'true' && bRequired === 'false') return -1;
+    if (aRequired === 'false' && bRequired === 'true') return 1;
+    return 0;
+  });
+  
+  // Process each course group in priority order
+  for (const courseKey of sortedCourseKeys) {
+    const courseLearners = learnersByCourse[courseKey];
     const [courseCode, instructorMatchRequired] = courseKey.split('::');
     
     if (instructorMatchRequired === 'true') {
@@ -214,9 +226,6 @@ function matchLearnersWithPeers(
   // Diagnostic logging per course
   console.log(`\nCourse: ${courseCode} (Instructor Required: ${instructorMatchRequired}, Instructor: ${requiredInstructor || 'any'})`);
   console.log(`  Learners: ${availableLearners.length}, Eligible Peers: ${eligiblePeers.length}`);
-  if (eligiblePeers.length > 0) {
-    console.log(`  Peers: ${eligiblePeers.map(p => `${p.email}(${p.assignedGroups}/2)`).join(', ')}`);
-  }
   
   if (eligiblePeers.length === 0) {
     // No peers available - mark all as unmatched
