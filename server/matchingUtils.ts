@@ -223,11 +223,23 @@ export function peerCanTeach(
     ...peer.otherCourses,
   ];
   
+  // If instructor is empty/blank, match ANY instructor for this course
+  const anyInstructorOk = !instructor || instructor.trim() === '';
+  
   for (const slot of slots) {
-    if (slot.courseCode && slot.instructor) {
-      if (slot.courseCode.trim() === courseCode.trim() && 
-          instructorsMatch(slot.instructor, instructor)) {
-        return true;
+    if (slot.courseCode) {
+      const courseMatches = slot.courseCode.trim() === courseCode.trim();
+      
+      if (courseMatches) {
+        // If we don't care about instructor, just need course match
+        if (anyInstructorOk) {
+          return true;
+        }
+        
+        // Otherwise check if instructor matches
+        if (slot.instructor && instructorsMatch(slot.instructor, instructor)) {
+          return true;
+        }
       }
     }
   }

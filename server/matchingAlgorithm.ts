@@ -40,6 +40,32 @@ const DAYS: Array<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'> = 
   'monday', 'tuesday', 'wednesday', 'thursday', 'friday'
 ];
 
+// Generate combinations of items with a given size
+// Limits the number of combinations returned for efficiency
+function generateCombinations<T>(items: T[], size: number, maxCombinations: number = 20): T[][] {
+  const combinations: T[][] = [];
+  
+  function backtrack(start: number, current: T[]) {
+    if (combinations.length >= maxCombinations) {
+      return;
+    }
+    
+    if (current.length === size) {
+      combinations.push([...current]);
+      return;
+    }
+    
+    for (let i = start; i < items.length; i++) {
+      current.push(items[i]);
+      backtrack(i + 1, current);
+      current.pop();
+    }
+  }
+  
+  backtrack(0, []);
+  return combinations;
+}
+
 export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
   const { requests, peers, learnerSchedules, volunteerSchedules } = input;
   
@@ -54,6 +80,21 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
     schedule: volunteerSchedules.find(s => s.email === peer.email),
     assignedGroups: peer.groups || 0, // Start with existing group count
   }));
+  
+  // Diagnostic logging
+  const learnersWithoutSchedule = learnersWithSchedules.filter(l => !l.schedule);
+  const peersWithoutSchedule = peersWithSchedules.filter(p => !p.schedule);
+  console.log(`\n=== MATCHING DIAGNOSTICS ===`);
+  console.log(`Total learners: ${learnersWithSchedules.length}`);
+  console.log(`Learners WITHOUT schedules: ${learnersWithoutSchedule.length}`);
+  if (learnersWithoutSchedule.length > 0) {
+    console.log(`  → ${learnersWithoutSchedule.map(l => l.email).slice(0, 5).join(', ')}...`);
+  }
+  console.log(`Total peers: ${peersWithSchedules.length}`);
+  console.log(`Peers WITHOUT schedules: ${peersWithoutSchedule.length}`);
+  if (peersWithoutSchedule.length > 0) {
+    console.log(`  → ${peersWithoutSchedule.map(p => p.email).join(', ')}`);
+  }
   
   const groups: InsertProposedGroup[] = [];
   const matched = new Set<string>(); // Track matched learner emails
@@ -170,6 +211,13 @@ function matchLearnersWithPeers(
     }
   });
   
+  // Diagnostic logging per course
+  console.log(`\nCourse: ${courseCode} (Instructor Required: ${instructorMatchRequired}, Instructor: ${requiredInstructor || 'any'})`);
+  console.log(`  Learners: ${availableLearners.length}, Eligible Peers: ${eligiblePeers.length}`);
+  if (eligiblePeers.length > 0) {
+    console.log(`  Peers: ${eligiblePeers.map(p => `${p.email}(${p.assignedGroups}/2)`).join(', ')}`);
+  }
+  
   if (eligiblePeers.length === 0) {
     // No peers available - mark all as unmatched
     for (const learner of availableLearners) {
@@ -203,24 +251,34 @@ function matchLearnersWithPeers(
     }
     
     // Try forming groups of size 4, 3, 2, 1 in that order
-    for (let groupSize = Math.min(4, currentAvailable.length); groupSize >= 1; groupSize--) {
-      const group = tryFormGroup(
-        currentAvailable.slice(0, groupSize),
-        peer,
-        courseCode,
-        requiredInstructor || peer.instructor1 || ''
-      );
+    // Use true combinatorial search to explore different learner subsets
+    let groupFormed = false;
+    
+    for (let groupSize = Math.min(4, currentAvailable.length); groupSize >= 1 && !groupFormed; groupSize--) {
+      // Generate combinations of learners
+      // Limit total combinations tried per group size for efficiency
+      const combinations = generateCombinations(currentAvailable, groupSize, 20);
       
-      if (group) {
-        groups.push(group);
-        peer.assignedGroups++;
+      for (const candidateLearners of combinations) {
+        const group = tryFormGroup(
+          candidateLearners,
+          peer,
+          courseCode,
+          requiredInstructor || peer.instructor1 || ''
+        );
         
-        // Mark learners as matched
-        for (const learner of group.learners) {
-          matched.add(learner.email);
+        if (group) {
+          groups.push(group);
+          peer.assignedGroups++;
+          
+          // Mark learners as matched
+          for (const learner of group.learners) {
+            matched.add(learner.email);
+          }
+          
+          groupFormed = true;
+          break; // Found a group, move to next peer
         }
-        
-        break; // Move to next peer
       }
     }
   }
