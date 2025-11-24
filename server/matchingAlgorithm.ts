@@ -79,7 +79,7 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
   const peersWithSchedules: PeerWithSchedule[] = peers.map(peer => ({
     ...peer,
     schedule: volunteerSchedules.find(s => s.email === peer.email),
-    assignedGroups: peer.groups || 0, // Start with existing group count
+    assignedGroups: 0, // Track groups assigned in this run
   }));
   
   // Diagnostic logging
@@ -206,8 +206,9 @@ function matchLearnersWithPeers(
   
   // Find eligible peers for this course/instructor
   const eligiblePeers = peers.filter(peer => {
-    // Check if peer has capacity (≤2 groups total)
-    if (peer.assignedGroups >= 2) {
+    // Check if peer has capacity based on their Groups column value
+    const maxGroups = peer.groups || 2; // Default to 2 if not specified
+    if (peer.assignedGroups >= maxGroups) {
       return false;
     }
     
@@ -242,7 +243,8 @@ function matchLearnersWithPeers(
   
   // Try to form groups with each peer
   for (const peer of eligiblePeers) {
-    if (peer.assignedGroups >= 2) {
+    const maxGroups = peer.groups || 2; // Default to 2 if not specified
+    if (peer.assignedGroups >= maxGroups) {
       continue;
     }
     
@@ -263,11 +265,15 @@ function matchLearnersWithPeers(
       const combinations = generateCombinations(currentAvailable, groupSize, 20);
       
       for (const candidateLearners of combinations) {
+        // Normalize instructor name to prevent duplicate groups from case sensitivity
+        const instructorName = requiredInstructor || peer.instructor1 || '';
+        const normalizedInstructor = normalizeInstructorName(instructorName);
+        
         const group = tryFormGroup(
           candidateLearners,
           peer,
           courseCode,
-          requiredInstructor || peer.instructor1 || ''
+          normalizedInstructor
         );
         
         if (group) {
