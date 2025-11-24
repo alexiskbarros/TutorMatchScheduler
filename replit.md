@@ -60,12 +60,15 @@ Preferred communication style: Simple, everyday language.
 - `POST /api/groups/:id/reject` - Reject and re-queue a group
 - `GET /api/unmatched` - Retrieve unmatched participants
 
-**Data Storage Strategy**: In-memory storage with `MemStorage` class implementing `IStorage` interface
-- Chosen for simplicity in V1.0 - no database provisioning required
-- All data persists only during server runtime
-- Primary data source is Google Sheets (read-only)
-- Storage holds derived/computed data: matching runs, proposed groups, unmatched participants
-- Future migration path: Interface-based design allows swapping MemStorage for database implementation
+**Data Storage Strategy**: PostgreSQL database with `DbStorage` class implementing `IStorage` interface
+- **Database**: Replit-provided Neon-backed PostgreSQL database
+- **Schema**: Three main tables (matching_runs, proposed_groups, unmatched_participants) managed via Drizzle ORM
+- **Data Persistence**: All matching runs, proposed groups, and manual adjustments survive server restarts
+- **JSONB Columns**: Learner data, time slots, and peer info stored as JSONB for flexibility
+- **Performance**: Indexed on run_id, status, and course_code for optimized queries
+- **Concurrency Safety**: Explicit runId parameters prevent race conditions between simultaneous matching runs
+- **Legacy Support**: MemStorage class retained for testing, but production uses DbStorage
+- **Primary Data Source**: Google Sheets remains read-only source; database holds derived/computed state
 
 **Matching Algorithm Design**:
 
@@ -91,14 +94,15 @@ Preferred communication style: Simple, everyday language.
 **Instructor Normalization**: Case-insensitive, whitespace-trimmed matching for instructor names (e.g., "Sarah Haughey", "Sarah haughey", "sarah haughey" all treated as same instructor)
 
 **Recent Improvements** (Nov 2025):
-- Fixed critical bug where instructor-flexible matching incorrectly rejected peers with different instructors (improved match rate from 4 to 21 learners)
-- Implemented instructor name normalization to prevent duplicate groups from case sensitivity
-- Added mixed cohort support to allow flexible learners to fill instructor-specific groups (maintains 21-learner throughput while honoring all instructor requirements)
-- Implemented intelligent time slot selection with gap detection:
-  - Score 3 (highest): Between classes - individual has classes both before/after OR group has classes within 90 min before/after
-  - Score 2: Within 1 hour of any class
-  - Score 1: Within 2 hours of any class
-  - Score 0: Far from all classes (>2 hours)
+- **Database Persistence** (Nov 24): Migrated from MemStorage to PostgreSQL with full data persistence across server restarts
+  - Manual group adjustments now survive server restarts, code refactoring, and new matching runs
+  - Fixed critical concurrency bug by removing latestRunId singleton and using explicit runId parameters
+  - Added database indexes on run_id, status, course_code for optimized query performance
+  - Architect-approved as production-ready with all concurrency issues resolved
+- **Matching Algorithm**: Fixed critical bug where instructor-flexible matching incorrectly rejected peers with different instructors (improved match rate from 4 to 21 learners)
+- **Instructor Normalization**: Implemented case-insensitive matching to prevent duplicate groups from case sensitivity
+- **Mixed Cohorts**: Allow flexible learners to fill instructor-specific groups (maintains 21-learner throughput while honoring all instructor requirements)
+- **Time Slot Intelligence**: Gap detection with scoring (3=between classes, 2=within 1hr, 1=within 2hrs, 0=far from classes)
   - Group-level gap detection maximizes convenience when different participants arrive from/stay for classes
 
 ### External Dependencies
@@ -127,7 +131,8 @@ Preferred communication style: Simple, everyday language.
 - **date-fns**: Date manipulation and formatting
 
 **Development Tools**:
-- **Drizzle ORM**: Type-safe ORM with PostgreSQL dialect (configured but not actively used in V1.0 - prepared for future database migration)
+- **Drizzle ORM**: Type-safe ORM with PostgreSQL dialect - actively used for database persistence
+- **Database Migrations**: Use `npm run db:push` to sync schema changes (add `--force` if needed)
 - **Vite**: Build tool and dev server with HMR
 - **TypeScript**: Type safety across client, server, and shared schemas
 - **Zod**: Runtime schema validation for data parsing and type inference
@@ -135,6 +140,7 @@ Preferred communication style: Simple, everyday language.
 **Deployment Environment**: Replit with environment variables managed through Replit Secrets
 - `REPLIT_CONNECTORS_HOSTNAME` - Connector API hostname
 - `REPL_IDENTITY` / `WEB_REPL_RENEWAL` - Authentication tokens for Google Sheets connector
-- `DATABASE_URL` - PostgreSQL connection (reserved for future use)
+- `DATABASE_URL` - PostgreSQL connection string (actively used for Neon database)
+- `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE` - PostgreSQL connection details
 
 **Font Delivery**: Google Fonts CDN for Inter (UI text) and JetBrains Mono (data/monospace)
