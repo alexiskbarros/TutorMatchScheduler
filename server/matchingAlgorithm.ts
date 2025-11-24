@@ -350,6 +350,15 @@ function findBestTimeSlot(schedules: ClassSchedule[]): {
     score: number;
   } | null = null;
   
+  // DEBUG: Log schedule data for specific participants
+  const debugEmails = ['Student28@test', 'Student29@test', 'avasi101@test'];
+  for (const schedule of schedules) {
+    if (debugEmails.includes(schedule.email)) {
+      console.log(`[Schedule Debug] ${schedule.email} (${schedule.firstName})`);
+      console.log(`  Tuesday: ${JSON.stringify(schedule.tuesday)}`);
+    }
+  }
+  
   // Try each day
   for (const day of DAYS) {
     const availableSlots = findAvailableSlots(schedules, day);
