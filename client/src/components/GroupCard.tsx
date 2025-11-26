@@ -2,7 +2,8 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Clock, User } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Clock } from "lucide-react";
 
 interface Learner {
   id: string;
@@ -24,9 +25,12 @@ interface GroupCardProps {
   peer: Peer;
   onApprove: (groupId: string) => void;
   onReject: (groupId: string) => void;
+  selected?: boolean;
+  onSelectChange?: (groupId: string, selected: boolean) => void;
+  selectionMode?: boolean;
 }
 
-export function GroupCard({ groupId, course, timeSlot, learners, peer, onApprove, onReject }: GroupCardProps) {
+export function GroupCard({ groupId, course, timeSlot, learners, peer, onApprove, onReject, selected = false, onSelectChange, selectionMode = false }: GroupCardProps) {
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -37,9 +41,18 @@ export function GroupCard({ groupId, course, timeSlot, learners, peer, onApprove
   };
 
   return (
-    <Card data-testid={`card-group-${groupId}`}>
+    <Card data-testid={`card-group-${groupId}`} className={selected ? 'ring-2 ring-primary' : ''}>
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
-        <h3 className="text-base font-semibold" data-testid={`text-course-${groupId}`}>{course}</h3>
+        <div className="flex items-center gap-3">
+          {selectionMode && (
+            <Checkbox
+              checked={selected}
+              onCheckedChange={(checked) => onSelectChange?.(groupId, !!checked)}
+              data-testid={`checkbox-select-${groupId}`}
+            />
+          )}
+          <h3 className="text-base font-semibold" data-testid={`text-course-${groupId}`}>{course}</h3>
+        </div>
         <Badge variant="secondary" className="text-xs" data-testid={`badge-timeslot-${groupId}`}>
           <Clock className="h-3 w-3 mr-1" />
           {timeSlot}

@@ -1,18 +1,57 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { CheckCircle, Database, Clock, Users, GraduationCap, Layers, Settings2 } from "lucide-react";
+
+interface SettingsResponse {
+  success: boolean;
+  settings: {
+    dataSource: {
+      connected: boolean;
+      type: string;
+      lastSync: string | null;
+    };
+    matchingConstraints: {
+      maxGroupSize: number;
+      minGroupSize: number;
+      maxPeerGroups: number;
+      travelBufferMinutes: number;
+      availabilityStart: string;
+      availabilityEnd: string;
+    };
+    statistics: {
+      totalMatchingRuns: number;
+      totalLearners: number;
+      totalPeers: number;
+      totalGroups: number;
+      lastRunStatus: string;
+    };
+  };
+}
 
 export default function Settings() {
-  const { toast } = useToast();
+  const { data, isLoading } = useQuery<SettingsResponse>({
+    queryKey: ['/api/settings'],
+  });
 
-  const handleSave = () => {
-    console.log('Saving settings');
-    toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully.",
+  const settings = data?.settings;
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -21,130 +60,187 @@ export default function Settings() {
       <div>
         <h1 className="text-3xl font-semibold" data-testid="text-page-title">Settings</h1>
         <p className="text-muted-foreground mt-1">
-          Configure system preferences and data source connections
+          System configuration and connection status
         </p>
       </div>
 
-      <div className="max-w-2xl space-y-6">
-        <Card data-testid="card-data-source">
-          <CardHeader>
-            <CardTitle>Data Source</CardTitle>
-            <CardDescription>
-              Configure Google Sheets integration for participant data
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="sheet-url">Google Sheet URL</Label>
-              <Input
-                id="sheet-url"
-                placeholder="https://docs.google.com/spreadsheets/d/..."
-                data-testid="input-sheet-url"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="service-account">Service Account Email</Label>
-              <Input
-                id="service-account"
-                placeholder="service-account@project.iam.gserviceaccount.com"
-                data-testid="input-service-account"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="card-matching-constraints">
-          <CardHeader>
-            <CardTitle>Matching Constraints</CardTitle>
-            <CardDescription>
-              Configure time windows and matching rules
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start-time">Availability Start Time</Label>
-                <Input
-                  id="start-time"
-                  type="time"
-                  defaultValue="08:00"
-                  data-testid="input-start-time"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="end-time">Availability End Time</Label>
-                <Input
-                  id="end-time"
-                  type="time"
-                  defaultValue="20:00"
-                  data-testid="input-end-time"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="travel-buffer">Travel Buffer (minutes)</Label>
-              <Input
-                id="travel-buffer"
-                type="number"
-                defaultValue="5"
-                min="0"
-                data-testid="input-travel-buffer"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="max-group-size">Maximum Group Size</Label>
-              <Input
-                id="max-group-size"
-                type="number"
-                defaultValue="4"
-                min="1"
-                max="10"
-                data-testid="input-max-group-size"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="card-email-settings">
-          <CardHeader>
-            <CardTitle>Email Notifications</CardTitle>
-            <CardDescription>
-              Configure email service for group notifications
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="from-email">From Email Address</Label>
-              <Input
-                id="from-email"
-                type="email"
-                placeholder="noreply@mtroyal.ca"
-                data-testid="input-from-email"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="admin-email">Administrator Email (for copies)</Label>
-              <Input
-                id="admin-email"
-                type="email"
-                placeholder="admin@mtroyal.ca"
-                data-testid="input-admin-email"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Separator />
-
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" data-testid="button-cancel-settings">
-            Cancel
-          </Button>
-          <Button onClick={handleSave} data-testid="button-save-settings">
-            Save Changes
-          </Button>
+      {isLoading ? (
+        <div className="max-w-3xl space-y-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-5 bg-muted rounded w-32" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-4 bg-muted rounded w-48" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      </div>
+      ) : (
+        <div className="max-w-3xl space-y-6">
+          <Card data-testid="card-data-source">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Database className="h-5 w-5 text-muted-foreground" />
+                  <CardTitle>Data Source</CardTitle>
+                </div>
+                <Badge variant={settings?.dataSource.connected ? "default" : "destructive"}>
+                  {settings?.dataSource.connected ? (
+                    <>
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Connected
+                    </>
+                  ) : (
+                    'Disconnected'
+                  )}
+                </Badge>
+              </div>
+              <CardDescription>
+                Connection to participant data source
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Source Type</p>
+                  <p className="text-sm">{settings?.dataSource.type || 'Unknown'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Last Sync</p>
+                  <p className="text-sm">{formatDate(settings?.dataSource.lastSync || null)}</p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Data source connection is managed through Replit Connectors. Contact your administrator to modify connection settings.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-matching-constraints">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Settings2 className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Matching Constraints</CardTitle>
+              </div>
+              <CardDescription>
+                Algorithm parameters for group matching
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Group Size</p>
+                  <p className="text-lg font-semibold">
+                    {settings?.matchingConstraints.minGroupSize} - {settings?.matchingConstraints.maxGroupSize} learners
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Max Peer Groups</p>
+                  <p className="text-lg font-semibold">{settings?.matchingConstraints.maxPeerGroups} groups</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Travel Buffer</p>
+                  <p className="text-lg font-semibold">{settings?.matchingConstraints.travelBufferMinutes} minutes</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Availability Window</p>
+                  <p className="text-lg font-semibold">
+                    {formatTime(settings?.matchingConstraints.availabilityStart || '08:00')} - {formatTime(settings?.matchingConstraints.availabilityEnd || '20:00')}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-statistics">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Layers className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>System Statistics</CardTitle>
+              </div>
+              <CardDescription>
+                Cumulative usage and performance data
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Clock className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-semibold">{settings?.statistics.totalMatchingRuns || 0}</p>
+                    <p className="text-xs text-muted-foreground">Matching Runs</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/10 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-semibold">{settings?.statistics.totalLearners || 0}</p>
+                    <p className="text-xs text-muted-foreground">Learners (Latest)</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-500/10 rounded-lg">
+                    <Users className="h-5 w-5 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-semibold">{settings?.statistics.totalPeers || 0}</p>
+                    <p className="text-xs text-muted-foreground">Peers (Latest)</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-500/10 rounded-lg">
+                    <Layers className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-semibold">{settings?.statistics.totalGroups || 0}</p>
+                    <p className="text-xs text-muted-foreground">Groups (Latest)</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator className="my-6" />
+
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Last Run Status</p>
+                <Badge variant={settings?.statistics.lastRunStatus === 'completed' ? 'default' : 'secondary'}>
+                  {settings?.statistics.lastRunStatus === 'completed' ? 'Completed' : 
+                   settings?.statistics.lastRunStatus === 'running' ? 'Running' :
+                   settings?.statistics.lastRunStatus === 'failed' ? 'Failed' : 'No runs yet'}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-about">
+            <CardHeader>
+              <CardTitle>About</CardTitle>
+              <CardDescription>
+                System information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between">
+                <p className="text-sm text-muted-foreground">Application</p>
+                <p className="text-sm font-medium">Semester Volunteer Matching System</p>
+              </div>
+              <div className="flex justify-between">
+                <p className="text-sm text-muted-foreground">Organization</p>
+                <p className="text-sm font-medium">Mount Royal University</p>
+              </div>
+              <div className="flex justify-between">
+                <p className="text-sm text-muted-foreground">Version</p>
+                <p className="text-sm font-medium">1.0.0</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

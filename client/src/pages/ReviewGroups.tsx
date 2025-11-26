@@ -3,9 +3,12 @@ import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ProposedGroup } from "@shared/schema";
+import { Download, CheckCircle } from "lucide-react";
 
 function formatTimeSlot(group: ProposedGroup): string {
   const dayMap: Record<string, string> = {
@@ -30,6 +33,8 @@ export default function ReviewGroups() {
   const { toast } = useToast();
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
   const { data: groupsData, isLoading } = useQuery<{ success: boolean; groups: ProposedGroup[] }>({
     queryKey: ['/api/groups'],
@@ -42,6 +47,31 @@ export default function ReviewGroups() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard-stats'] });
+    },
+  });
+
+  const bulkApproveMutation = useMutation({
+    mutationFn: async (groupIds: string[]) => {
+      const response = await apiRequest('POST', '/api/groups/bulk-approve', { groupIds });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard-stats'] });
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+      toast({
+        title: "Groups Approved",
+        description: data.message,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve groups. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -52,6 +82,7 @@ export default function ReviewGroups() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard-stats'] });
       toast({
         title: "Group Rejected",
         description: "Participants have been re-queued for future matching runs.",
@@ -105,18 +136,62 @@ export default function ReviewGroups() {
     }
   };
 
+  const handleSelectChange = (groupId: string, selected: boolean) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(groupId);
+      } else {
+        next.delete(groupId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(transformedGroups.map(g => g.groupId)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleBulkApprove = () => {
+    if (selectedIds.size > 0) {
+      bulkApproveMutation.mutate(Array.from(selectedIds));
+    }
+  };
+
+  const handleExportCSV = () => {
+    window.open('/api/export/groups', '_blank');
+  };
+
+  const allSelected = transformedGroups.length > 0 && selectedIds.size === transformedGroups.length;
+  const someSelected = selectedIds.size > 0 && selectedIds.size < transformedGroups.length;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-semibold" data-testid="text-page-title">Review Groups</h1>
           <p className="text-muted-foreground mt-1">
             Review and approve proposed group matches
           </p>
         </div>
-        <Badge variant="secondary" className="text-sm" data-testid="badge-pending-count">
-          {transformedGroups.length} Pending
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            data-testid="button-export-csv"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Badge variant="secondary" className="text-sm" data-testid="badge-pending-count">
+            {transformedGroups.length} Pending
+          </Badge>
+        </div>
       </div>
 
       {isLoading ? (
@@ -130,16 +205,71 @@ export default function ReviewGroups() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {transformedGroups.map((group: any) => (
-            <GroupCard
-              key={group.groupId}
-              {...group}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
-          ))}
-        </div>
+        <>
+          <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                checked={allSelected}
+                onCheckedChange={handleSelectAll}
+                data-testid="checkbox-select-all"
+                ref={(ref) => {
+                  if (ref && someSelected) {
+                    (ref as unknown as HTMLButtonElement).dataset.state = 'indeterminate';
+                  }
+                }}
+              />
+              <span className="text-sm font-medium">
+                {selectionMode ? (
+                  selectedIds.size > 0 
+                    ? `${selectedIds.size} of ${transformedGroups.length} selected`
+                    : 'Select groups for bulk actions'
+                ) : (
+                  'Select groups for bulk actions'
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {selectedIds.size > 0 && (
+                <Button
+                  size="sm"
+                  onClick={handleBulkApprove}
+                  disabled={bulkApproveMutation.isPending}
+                  data-testid="button-bulk-approve"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Approve {selectedIds.size} Groups
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectionMode(!selectionMode);
+                  if (selectionMode) {
+                    setSelectedIds(new Set());
+                  }
+                }}
+                data-testid="button-toggle-selection"
+              >
+                {selectionMode ? 'Cancel Selection' : 'Bulk Select'}
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {transformedGroups.map((group: any) => (
+              <GroupCard
+                key={group.groupId}
+                {...group}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                selected={selectedIds.has(group.groupId)}
+                onSelectChange={handleSelectChange}
+                selectionMode={selectionMode}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {selectedGroup && (

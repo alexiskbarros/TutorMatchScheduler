@@ -179,6 +179,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/groups/bulk-approve - Bulk approve multiple groups
+  app.post("/api/groups/bulk-approve", async (req, res) => {
+    try {
+      const { groupIds } = req.body;
+      
+      if (!Array.isArray(groupIds) || groupIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'groupIds must be a non-empty array',
+        });
+      }
+
+      const results = [];
+      for (const groupId of groupIds) {
+        const group = await storage.getGroup(groupId);
+        if (group) {
+          await storage.updateGroupStatus(groupId, 'approved');
+          results.push({ groupId, status: 'approved' });
+          console.log(`Bulk approved group ${groupId}: ${group.peerEmail}, ${group.learners.map(l => l.email).join(', ')}`);
+        } else {
+          results.push({ groupId, status: 'not_found' });
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Approved ${results.filter(r => r.status === 'approved').length} groups`,
+        results,
+      });
+    } catch (error) {
+      console.error('Error bulk approving groups:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   // POST /api/groups/:id/approve - Approve a group
   app.post("/api/groups/:id/approve", async (req, res) => {
     try {
@@ -291,6 +329,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/export/groups - Export groups as CSV
+  app.get("/api/export/groups", async (req, res) => {
+    try {
+      const runs = await storage.getAllMatchingRuns();
+      const latestRun = runs[0];
+      
+      if (!latestRun) {
+        return res.status(404).json({
+          success: false,
+          error: 'No matching runs found',
+        });
+      }
+
+      const allGroups = await storage.getGroupsByRunId(latestRun.id);
+      
+      // Build CSV content
+      const headers = ['Group ID', 'Course Code', 'Instructor', 'Status', 'Day', 'Start Time', 'End Time', 'Peer Name', 'Peer Email', 'Learner Names', 'Learner Emails'];
+      const rows = allGroups.map(g => [
+        g.id,
+        g.courseCode,
+        g.instructor,
+        g.status,
+        g.timeSlot.day,
+        g.timeSlot.start,
+        g.timeSlot.end,
+        g.peerName,
+        g.peerEmail,
+        g.learners.map(l => l.name).join('; '),
+        g.learners.map(l => l.email).join('; '),
+      ]);
+
+      const csv = [headers.join(','), ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="groups-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+    } catch (error) {
+      console.error('Error exporting groups:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // GET /api/export/unmatched - Export unmatched participants as CSV
+  app.get("/api/export/unmatched", async (req, res) => {
+    try {
+      const participants = await storage.getLatestUnmatchedParticipants();
+      
+      // Build CSV content
+      const headers = ['Name', 'Email', 'Role', 'Course Code', 'Constraint Failure'];
+      const rows = participants.map(p => [
+        p.name,
+        p.email,
+        p.role,
+        p.courseCode,
+        p.constraintFailure || '',
+      ]);
+
+      const csv = [headers.join(','), ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="unmatched-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+    } catch (error) {
+      console.error('Error exporting unmatched:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   // GET /api/dashboard-stats - Get aggregated dashboard statistics
   app.get("/api/dashboard-stats", async (req, res) => {
     try {
@@ -379,6 +491,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error syncing data:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // GET /api/settings - Get current system settings and status
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const runs = await storage.getAllMatchingRuns();
+      const latestRun = runs[0];
+      
+      // Get counts from latest run
+      let totalLearners = 0;
+      let totalPeers = 0;
+      let totalGroups = 0;
+      
+      if (latestRun) {
+        totalLearners = latestRun.totalLearners;
+        totalPeers = latestRun.totalPeers;
+        totalGroups = latestRun.proposedGroups;
+      }
+      
+      res.json({
+        success: true,
+        settings: {
+          dataSource: {
+            connected: true,
+            type: 'Google Sheets',
+            lastSync: latestRun?.timestamp || null,
+          },
+          matchingConstraints: {
+            maxGroupSize: 4,
+            minGroupSize: 1,
+            maxPeerGroups: 2,
+            travelBufferMinutes: 5,
+            availabilityStart: '08:00',
+            availabilityEnd: '20:00',
+          },
+          statistics: {
+            totalMatchingRuns: runs.length,
+            totalLearners,
+            totalPeers,
+            totalGroups,
+            lastRunStatus: latestRun?.status || 'none',
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching settings:', error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
