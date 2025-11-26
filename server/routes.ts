@@ -291,6 +291,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/dashboard-stats - Get aggregated dashboard statistics
+  app.get("/api/dashboard-stats", async (req, res) => {
+    try {
+      const runs = await storage.getAllMatchingRuns();
+      const latestRun = runs[0]; // Most recent run
+      
+      // Get stats from latest completed run
+      let stats = {
+        totalLearners: 0,
+        totalPeers: 0,
+        matchedLearners: 0,
+        matchRate: 0,
+        pendingGroups: 0,
+        approvedGroups: 0,
+        unmatchedCount: 0,
+      };
+      
+      if (latestRun && latestRun.status === 'completed') {
+        stats.totalLearners = latestRun.totalLearners;
+        stats.totalPeers = latestRun.totalPeers;
+        stats.matchedLearners = latestRun.matchedLearners;
+        stats.matchRate = latestRun.totalLearners > 0 
+          ? Math.round((latestRun.matchedLearners / latestRun.totalLearners) * 100) 
+          : 0;
+        
+        // Get group counts by status
+        const allGroups = await storage.getGroupsByRunId(latestRun.id);
+        stats.pendingGroups = allGroups.filter(g => g.status === 'pending').length;
+        stats.approvedGroups = allGroups.filter(g => g.status === 'approved').length;
+        
+        // Get unmatched count
+        const unmatched = await storage.getLatestUnmatchedParticipants();
+        stats.unmatchedCount = unmatched.length;
+      }
+      
+      // Build recent activity from matching runs
+      const recentActivity = runs.slice(0, 5).map(run => ({
+        id: run.id,
+        type: 'run' as const,
+        description: run.status === 'completed' 
+          ? `Matching run completed: ${run.matchedLearners} learners matched into ${run.proposedGroups} groups`
+          : run.status === 'running' 
+            ? 'Matching run in progress...'
+            : 'Matching run failed',
+        timestamp: run.timestamp,
+        status: run.status,
+      }));
+      
+      res.json({
+        success: true,
+        stats,
+        recentActivity,
+        lastRunTimestamp: latestRun?.timestamp,
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   // POST /api/sync-data - Sync data from Google Sheets
   app.post("/api/sync-data", async (req, res) => {
     try {

@@ -2,36 +2,57 @@ import { StatCard } from "@/components/StatCard";
 import { ActivityTimeline } from "@/components/ActivityTimeline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, GraduationCap, CheckCircle, PlayCircle, FileText } from "lucide-react";
+import { Users, GraduationCap, CheckCircle, PlayCircle, FileText, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+
+interface DashboardStats {
+  totalLearners: number;
+  totalPeers: number;
+  matchedLearners: number;
+  matchRate: number;
+  pendingGroups: number;
+  approvedGroups: number;
+  unmatchedCount: number;
+}
+
+interface RecentActivity {
+  id: string;
+  type: 'run' | 'approval' | 'rejection';
+  description: string;
+  timestamp: string;
+  status: string;
+}
+
+interface DashboardResponse {
+  success: boolean;
+  stats: DashboardStats;
+  recentActivity: RecentActivity[];
+  lastRunTimestamp?: string;
+}
 
 export default function Dashboard() {
-  const mockActivities = [
-    {
-      id: 'a1',
-      type: 'approval' as const,
-      description: 'Approved group for MATH 1505 (3 learners)',
-      timestamp: new Date(Date.now() - 1000 * 60 * 5)
-    },
-    {
-      id: 'a2',
-      type: 'approval' as const,
-      description: 'Approved group for COMP 1501 (2 learners)',
-      timestamp: new Date(Date.now() - 1000 * 60 * 12)
-    },
-    {
-      id: 'a3',
-      type: 'rejection' as const,
-      description: 'Rejected and re-queued group for PHYS 2201',
-      timestamp: new Date(Date.now() - 1000 * 60 * 45)
-    },
-    {
-      id: 'a4',
-      type: 'run' as const,
-      description: 'Started matching run for Fall 2024',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2)
-    },
-  ];
+  const { data, isLoading } = useQuery<DashboardResponse>({
+    queryKey: ['/api/dashboard-stats'],
+    refetchInterval: 30000,
+  });
+
+  const stats = data?.stats || {
+    totalLearners: 0,
+    totalPeers: 0,
+    matchedLearners: 0,
+    matchRate: 0,
+    pendingGroups: 0,
+    approvedGroups: 0,
+    unmatchedCount: 0,
+  };
+
+  const activities = (data?.recentActivity || []).map(activity => ({
+    id: activity.id,
+    type: activity.type,
+    description: activity.description,
+    timestamp: new Date(activity.timestamp),
+  }));
 
   return (
     <div className="space-y-6">
@@ -42,31 +63,83 @@ export default function Dashboard() {
         </p>
       </div>
 
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="pb-2">
+                <div className="h-4 bg-muted rounded w-24" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-muted rounded w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Learners"
+            value={stats.totalLearners}
+            subtitle="Requesting tutoring"
+            icon={GraduationCap}
+          />
+          <StatCard
+            title="Total Peers"
+            value={stats.totalPeers}
+            subtitle="Available tutors"
+            icon={Users}
+          />
+          <StatCard
+            title="Matched"
+            value={stats.matchedLearners}
+            subtitle={`${stats.matchRate}% match rate`}
+            icon={CheckCircle}
+          />
+          <StatCard
+            title="Unmatched"
+            value={stats.unmatchedCount}
+            subtitle="Need attention"
+            icon={AlertCircle}
+            variant={stats.unmatchedCount > 0 ? "warning" : "default"}
+          />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
-          title="Total Learners"
-          value={342}
-          subtitle="Active this semester"
-          icon={GraduationCap}
-          trend={{ value: "12% from last semester", positive: true }}
+          title="Pending Review"
+          value={stats.pendingGroups}
+          subtitle="Groups awaiting approval"
+          icon={FileText}
         />
         <StatCard
-          title="Total Peers"
-          value={89}
-          subtitle="Available tutors"
-          icon={Users}
-        />
-        <StatCard
-          title="Matched This Semester"
-          value={287}
-          subtitle="84% match rate"
+          title="Approved Groups"
+          value={stats.approvedGroups}
+          subtitle="Ready for notifications"
           icon={CheckCircle}
-          trend={{ value: "8% from last semester", positive: true }}
         />
+        <Card data-testid="card-last-run">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Last Run</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-semibold" data-testid="text-last-run">
+              {data?.lastRunTimestamp 
+                ? new Date(data.lastRunTimestamp).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : 'No runs yet'}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ActivityTimeline activities={mockActivities} />
+        <ActivityTimeline activities={activities} />
         
         <Card data-testid="card-quick-actions">
           <CardHeader>
@@ -82,13 +155,13 @@ export default function Dashboard() {
             <Link href="/review-groups">
               <Button variant="outline" className="w-full justify-start" data-testid="button-quick-review-groups">
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Review Proposed Groups
+                Review Proposed Groups ({stats.pendingGroups} pending)
               </Button>
             </Link>
             <Link href="/unmatched">
               <Button variant="outline" className="w-full justify-start" data-testid="button-quick-unmatched">
-                <FileText className="h-4 w-4 mr-2" />
-                View Unmatched Report
+                <AlertCircle className="h-4 w-4 mr-2" />
+                View Unmatched Report ({stats.unmatchedCount} participants)
               </Button>
             </Link>
           </CardContent>
