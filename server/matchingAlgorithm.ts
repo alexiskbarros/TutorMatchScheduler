@@ -69,6 +69,12 @@ function generateCombinations<T>(items: T[], size: number, maxCombinations: numb
   return combinations;
 }
 
+// Track specific failure reasons for each learner
+type FailureReason = {
+  reason: string;
+  details: string;
+};
+
 export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
   const { requests, peers, learnerSchedules, volunteerSchedules } = input;
   
@@ -84,7 +90,18 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
     assignedGroups: 0, // Track groups assigned in this run
   }));
   
-  // Diagnostic logging
+  // Track failure reasons for unmatched learners
+  const failureReasons = new Map<string, FailureReason>();
+  
+  // Initialize failure reasons - check for missing schedules first
+  for (const learner of learnersWithSchedules) {
+    if (!learner.schedule) {
+      failureReasons.set(learner.email, {
+        reason: 'Missing schedule',
+        details: `No class schedule found for ${learner.firstName} ${learner.lastName}. Please ensure their schedule is entered in the Learner Class Schedule sheet.`
+      });
+    }
+  }
   
   const groups: InsertProposedGroup[] = [];
   const matched = new Set<string>(); // Track matched learner emails
@@ -128,7 +145,8 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
           instructor,
           true,
           groups,
-          matched
+          matched,
+          failureReasons
         );
       }
     } else {
@@ -140,7 +158,8 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
         null,
         false,
         groups,
-        matched
+        matched,
+        failureReasons
       );
     }
   }
@@ -149,13 +168,24 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
   const unmatched: UnmatchedParticipant[] = [];
   for (const learner of learnersWithSchedules) {
     if (!matched.has(learner.email)) {
+      // Get the specific failure reason, or use a default
+      const failure = failureReasons.get(learner.email);
+      let constraintFailure: string;
+      
+      if (failure) {
+        constraintFailure = `${failure.reason}: ${failure.details}`;
+      } else {
+        // This shouldn't happen, but provide a fallback
+        constraintFailure = 'Unable to find a suitable match. Please review manually.';
+      }
+      
       unmatched.push({
         id: `learner-${learner.email}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: `${learner.firstName} ${learner.lastName}`,
         email: learner.email,
         role: 'Learner',
         courseCode: learner.courseCode,
-        constraintFailure: 'No available match - Schedule conflicts, no eligible peers, or peer capacity exhausted',
+        constraintFailure,
       });
     }
   }
@@ -208,7 +238,8 @@ function matchLearnersWithPeers(
   requiredInstructor: string | null,
   instructorMatchRequired: boolean,
   groups: InsertProposedGroup[],
-  matched: Set<string>
+  matched: Set<string>,
+  failureReasons: Map<string, FailureReason>
 ): void {
   // Filter available learners (not yet matched)
   const availableLearners = learners.filter(l => !matched.has(l.email));
@@ -217,26 +248,49 @@ function matchLearnersWithPeers(
     return;
   }
   
-  // Find eligible peers for this course/instructor
-  const eligiblePeers = peers.filter(peer => {
-    // Check if peer has capacity based on their Groups column value
-    const maxGroups = peer.groups || 2; // Default to 2 if not specified
-    if (peer.assignedGroups >= maxGroups) {
-      return false;
-    }
-    
-    // Check if peer can teach this course
+  // Find all peers who teach this course (regardless of capacity)
+  const peersForCourse = peers.filter(peer => {
     if (instructorMatchRequired && requiredInstructor) {
       return peerCanTeach(peer, courseCode, requiredInstructor);
     } else {
-      // For non-instructor-match-required, peer just needs to teach the course (any instructor)
       return peerCanTeach(peer, courseCode, requiredInstructor || '');
     }
   });
   
+  // Check if no peers exist at all for this course/instructor
+  if (peersForCourse.length === 0) {
+    const reason = instructorMatchRequired && requiredInstructor
+      ? `No peers available for ${courseCode} with instructor ${requiredInstructor}`
+      : `No peers available for ${courseCode}`;
+    
+    for (const learner of availableLearners) {
+      if (!failureReasons.has(learner.email)) {
+        failureReasons.set(learner.email, {
+          reason: 'No eligible peers',
+          details: reason
+        });
+      }
+    }
+    return;
+  }
+  
+  // Find eligible peers (has capacity)
+  const eligiblePeers = peersForCourse.filter(peer => {
+    const maxGroups = peer.groups || 2;
+    return peer.assignedGroups < maxGroups;
+  });
   
   if (eligiblePeers.length === 0) {
-    // No peers available for this course/instructor combination
+    // Peers exist but all at capacity
+    const peerNames = peersForCourse.map(p => `${p.preferredName} ${p.lastName}`).join(', ');
+    for (const learner of availableLearners) {
+      if (!failureReasons.has(learner.email)) {
+        failureReasons.set(learner.email, {
+          reason: 'Peer capacity exhausted',
+          details: `All peers for ${courseCode} have reached their maximum group limit. Available peers (at capacity): ${peerNames}`
+        });
+      }
+    }
     return;
   }
   
@@ -288,6 +342,19 @@ function matchLearnersWithPeers(
           break; // Found a group, move to next peer
         }
       }
+    }
+  }
+  
+  // After all matching attempts, set schedule conflict reasons for remaining unmatched learners
+  const stillUnmatched = availableLearners.filter(l => !matched.has(l.email));
+  for (const learner of stillUnmatched) {
+    if (!failureReasons.has(learner.email)) {
+      // Build a list of peers that were tried
+      const triedPeers = eligiblePeers.map(p => `${p.preferredName} ${p.lastName}`).join(', ');
+      failureReasons.set(learner.email, {
+        reason: 'Schedule conflict',
+        details: `No common available time slot found between ${learner.firstName} ${learner.lastName} and any eligible peer for ${courseCode}. Peers tried: ${triedPeers}`
+      });
     }
   }
 }

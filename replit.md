@@ -94,6 +94,12 @@ Preferred communication style: Simple, everyday language.
 **Instructor Normalization**: Case-insensitive, whitespace-trimmed matching for instructor names (e.g., "Sarah Haughey", "Sarah haughey", "sarah haughey" all treated as same instructor)
 
 **Recent Improvements** (Nov 2025):
+- **Specific Constraint Failure Reasons** (Nov 26): Unmatched participants now show exactly why they weren't matched:
+  - "No eligible peers" - No peers available for the course
+  - "No eligible peers with instructor" - No peers for course + specific instructor requirement
+  - "Schedule conflict" - Lists which peers were tried but had no common time slots
+  - "Peer capacity exhausted" - Lists which peers are at their maximum group limit
+  - "Missing schedule" - Learner's class schedule not found in Google Sheets
 - **Database Persistence** (Nov 24): Migrated from MemStorage to PostgreSQL with full data persistence across server restarts
   - Manual group adjustments now survive server restarts, code refactoring, and new matching runs
   - Fixed critical concurrency bug by removing latestRunId singleton and using explicit runId parameters
