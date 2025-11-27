@@ -317,9 +317,8 @@ function matchLearnersWithPeers(
       // Filter learners to prioritize those with matching instructor (if instructor matching is required)
       // This keeps learners with the same instructor in the same peer's groups
       let prioritizedLearners = currentAvailable;
-      if (instructorMatchRequired && normalizedInstructor) {
-        const normalized = normalizeInstructorName(normalizedInstructor);
-        const matchingInstructor = currentAvailable.filter(l => normalizeInstructorName(l.instructor) === normalized);
+      if (instructorMatchRequired && instructorName) {
+        const matchingInstructor = currentAvailable.filter(l => instructorsMatch(l.instructor, instructorName));
         if (matchingInstructor.length > 0) {
           prioritizedLearners = matchingInstructor;
         }
