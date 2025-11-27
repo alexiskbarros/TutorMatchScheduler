@@ -125,6 +125,11 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
     const courseLearners = learnersByCourse[courseKey];
     const [courseCode, instructorMatchRequired] = courseKey.split('::');
     
+    console.log(`\n=== Processing ${courseCode} with instructorMatchRequired=${instructorMatchRequired}, ${courseLearners.length} learners ===`);
+    if (courseCode === 'ACCT 2121') {
+      console.log('ACCT 2121 learners:', courseLearners.map(l => ({ email: l.email, instructor: l.instructor, matchRequired: l.instructorMatchRequired })));
+    }
+    
     if (instructorMatchRequired === 'true') {
       // Group by instructor when match is required
       const learnersByInstructor = groupByInstructor(courseLearners);
@@ -327,6 +332,10 @@ function matchLearnersWithPeers(
           instructorName = peer.instructor1 || '';
         }
         const normalizedInstructor = normalizeInstructorName(instructorName);
+        
+        if (courseCode === 'ACCT 2121') {
+          console.log(`ACCT 2121 group attempt: peer=${peer.preferredName}, instructor="${normalizedInstructor}", learners=${candidateLearners.map(l => l.firstName).join(', ')}`);
+        }
         
         const group = tryFormGroup(
           candidateLearners,
