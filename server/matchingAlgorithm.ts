@@ -307,26 +307,36 @@ function matchLearnersWithPeers(
         break;
       }
       
+      // Get the instructor for this peer's groups
+      let instructorName = '';
+      if (instructorMatchRequired) {
+        instructorName = requiredInstructor || peer.instructor1 || '';
+      }
+      const normalizedInstructor = normalizeInstructorName(instructorName);
+      
+      // Filter learners to prioritize those with matching instructor (if instructor matching is required)
+      // This keeps learners with the same instructor in the same peer's groups
+      let prioritizedLearners = currentAvailable;
+      if (instructorMatchRequired && normalizedInstructor) {
+        const normalized = normalizeInstructorName(normalizedInstructor);
+        const matchingInstructor = currentAvailable.filter(l => normalizeInstructorName(l.instructor) === normalized);
+        if (matchingInstructor.length > 0) {
+          prioritizedLearners = matchingInstructor;
+        }
+      }
+      
       // Try forming groups of size 4, 3, 2, 1 in that order
       // Use true combinatorial search to explore different learner subsets
       let groupFormed = false;
       
-      for (let groupSize = Math.min(4, currentAvailable.length); groupSize >= 1 && !groupFormed; groupSize--) {
+      for (let groupSize = Math.min(4, prioritizedLearners.length); groupSize >= 1 && !groupFormed; groupSize--) {
         // Generate combinations of learners
         // Use higher limit for better schedule conflict resolution
         // Smaller group sizes get even more combinations to try
         const combinationLimit = groupSize === 1 ? 50 : groupSize === 2 ? 100 : 75;
-        const combinations = generateCombinations(currentAvailable, groupSize, combinationLimit);
+        const combinations = generateCombinations(prioritizedLearners, groupSize, combinationLimit);
         
         for (const candidateLearners of combinations) {
-          // Only use instructor if it's required by the learners
-          // If instructorMatchRequired is false, use empty string so all learners mix freely
-          let instructorName = '';
-          if (instructorMatchRequired) {
-            instructorName = requiredInstructor || peer.instructor1 || '';
-          }
-          const normalizedInstructor = normalizeInstructorName(instructorName);
-          
           const group = tryFormGroup(
             candidateLearners,
             peer,
