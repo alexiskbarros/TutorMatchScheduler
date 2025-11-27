@@ -136,7 +136,7 @@ export class DbStorage implements IStorage {
       peerId: group.peerId,
       peerName: group.peerName,
       peerEmail: group.peerEmail,
-      learners: group.learners as Array<{id: string; name: string; email: string}>,
+      learners: group.learners as Array<{id: string; name: string; email: string; instructor?: string}>,
       timeSlot: {
         day: group.timeSlotDay,
         start: group.timeSlotStart,
@@ -161,7 +161,7 @@ export class DbStorage implements IStorage {
       peerId: group.peerId,
       peerName: group.peerName,
       peerEmail: group.peerEmail,
-      learners: group.learners as Array<{id: string; name: string; email: string}>,
+      learners: group.learners as Array<{id: string; name: string; email: string; instructor?: string}>,
       timeSlot: {
         day: group.timeSlotDay,
         start: group.timeSlotStart,
@@ -184,7 +184,7 @@ export class DbStorage implements IStorage {
       peerId: group.peerId,
       peerName: group.peerName,
       peerEmail: group.peerEmail,
-      learners: group.learners as Array<{id: string; name: string; email: string}>,
+      learners: group.learners as Array<{id: string; name: string; email: string; instructor?: string}>,
       timeSlot: {
         day: group.timeSlotDay,
         start: group.timeSlotStart,
