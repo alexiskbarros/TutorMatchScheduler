@@ -9,6 +9,7 @@ interface Learner {
   id: string;
   name: string;
   email: string;
+  instructor?: string;
 }
 
 interface Peer {
@@ -20,6 +21,7 @@ interface Peer {
 interface GroupCardProps {
   groupId: string;
   course: string;
+  courseCode: string;
   timeSlot: string;
   learners: Learner[];
   peer: Peer;
@@ -31,7 +33,7 @@ interface GroupCardProps {
   peerGroupNumber?: number;
 }
 
-export function GroupCard({ groupId, course, timeSlot, learners, peer, onApprove, onReject, selected = false, onSelectChange, selectionMode = false, peerGroupNumber = 1 }: GroupCardProps) {
+export function GroupCard({ groupId, course, courseCode, timeSlot, learners, peer, onApprove, onReject, selected = false, onSelectChange, selectionMode = false, peerGroupNumber = 1 }: GroupCardProps) {
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -52,7 +54,7 @@ export function GroupCard({ groupId, course, timeSlot, learners, peer, onApprove
               data-testid={`checkbox-select-${groupId}`}
             />
           )}
-          <h3 className="text-base font-semibold" data-testid={`text-course-${groupId}`}>{peer.name} - {course} - Group {peerGroupNumber}</h3>
+          <h3 className="text-base font-semibold" data-testid={`text-course-${groupId}`}>{peer.name} - {courseCode} - Group {peerGroupNumber}</h3>
         </div>
         <Badge variant="secondary" className="text-xs" data-testid={`badge-timeslot-${groupId}`}>
           <Clock className="h-3 w-3 mr-1" />
@@ -88,9 +90,14 @@ export function GroupCard({ groupId, course, timeSlot, learners, peer, onApprove
                     {getInitials(learner.name)}
                   </AvatarFallback>
                 </Avatar>
-                <div>
+                <div className="flex-1">
                   <p className="text-sm" data-testid={`text-learner-name-${learner.id}`}>{learner.name}</p>
-                  <p className="text-xs text-muted-foreground">{learner.email}</p>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-xs text-muted-foreground">{learner.email}</p>
+                    {learner.instructor && (
+                      <p className="text-xs text-muted-foreground font-medium">Instructor: {learner.instructor}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

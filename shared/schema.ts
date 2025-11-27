@@ -68,6 +68,7 @@ export const proposedGroupSchema = z.object({
     id: z.string(),
     name: z.string(),
     email: z.string(),
+    instructor: z.string().optional(),
   })),
   timeSlot: z.object({
     day: z.enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']),

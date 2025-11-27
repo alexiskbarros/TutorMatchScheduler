@@ -102,6 +102,7 @@ export default function ReviewGroups() {
     
     return {
       groupId: g.id,
+      courseCode: g.courseCode,
       course: `${g.courseCode} - ${g.instructor}`,
       timeSlot: formatTimeSlot(g),
       peer: {
@@ -109,10 +110,11 @@ export default function ReviewGroups() {
         name: g.peerName,
         email: g.peerEmail,
       },
-      learners: g.learners.map((l: { id: string; name: string; email: string }) => ({
+      learners: g.learners.map((l: any) => ({
         id: l.id,
         name: l.name,
         email: l.email,
+        instructor: l.instructor,
       })),
       peerGroupNumber: groupNumber,
     };
@@ -271,6 +273,7 @@ export default function ReviewGroups() {
                 key={group.groupId}
                 groupId={group.groupId}
                 course={group.course}
+                courseCode={group.courseCode}
                 timeSlot={group.timeSlot}
                 peer={group.peer}
                 learners={group.learners}

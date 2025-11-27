@@ -402,6 +402,7 @@ function tryFormGroup(
       id: l.email,
       name: `${l.firstName} ${l.lastName}`,
       email: l.email,
+      instructor: l.instructor || undefined,
     })),
     timeSlot: bestSlot,
   };

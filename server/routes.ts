@@ -345,18 +345,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allGroups = await storage.getGroupsByRunId(latestRun.id);
       
       // Build CSV content
-      const headers = ['Group ID', 'Course Code', 'Instructor', 'Status', 'Day', 'Start Time', 'End Time', 'Peer Name', 'Peer Email', 'Learner Names', 'Learner Emails'];
+      const headers = ['Group ID', 'Course Code', 'Peer Name', 'Peer Email', 'Status', 'Day', 'Start Time', 'End Time', 'Learner Names', 'Learner Instructors', 'Learner Emails'];
       const rows = allGroups.map(g => [
         g.id,
         g.courseCode,
-        g.instructor,
+        g.peerName,
+        g.peerEmail,
         g.status,
         g.timeSlot.day,
         g.timeSlot.start,
         g.timeSlot.end,
-        g.peerName,
-        g.peerEmail,
         g.learners.map(l => l.name).join('; '),
+        g.learners.map(l => l.instructor || 'N/A').join('; '),
         g.learners.map(l => l.email).join('; '),
       ]);
 
