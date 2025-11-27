@@ -1,8 +1,9 @@
 import { GroupCard } from "@/components/GroupCard";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { ProposedGroup } from "@shared/schema";
-import { Users } from "lucide-react";
+import { Users, Mail } from "lucide-react";
 
 function formatTimeSlot(group: ProposedGroup): string {
   const dayMap: Record<string, string> = {
@@ -21,6 +22,27 @@ function formatTimeSlot(group: ProposedGroup): string {
   };
   
   return `${dayMap[group.timeSlot.day]} ${formatTime(group.timeSlot.start)} - ${formatTime(group.timeSlot.end)}`;
+}
+
+function getGroupEmailLink(group: any): string {
+  const emails: string[] = [];
+  
+  // Add peer email
+  if (group.peerEmail) {
+    emails.push(group.peerEmail);
+  }
+  
+  // Add learner emails
+  group.learners.forEach((learner: any) => {
+    if (learner.email) {
+      emails.push(learner.email);
+    }
+  });
+  
+  const to = emails.join(',');
+  const subject = encodeURIComponent(`${group.courseCode} - ${group.peerName} Group ${group.peerGroupNumber}`);
+  
+  return `mailto:${to}?subject=${subject}`;
 }
 
 export default function Matched() {
@@ -111,10 +133,22 @@ export default function Matched() {
                 </div>
               </div>
 
-              <div className="pt-2 border-t">
+              <div className="pt-2 border-t space-y-3">
                 <p className="text-xs text-muted-foreground" data-testid={`text-time-${group.id}`}>
                   {formatTimeSlot(group)}
                 </p>
+                
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    window.location.href = getGroupEmailLink(group);
+                  }}
+                  data-testid={`button-email-group-${group.id}`}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email Group
+                </Button>
               </div>
             </div>
           ))}
