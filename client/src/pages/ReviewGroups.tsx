@@ -93,21 +93,30 @@ export default function ReviewGroups() {
 
   const groups = groupsData?.groups || [] as ProposedGroup[];
 
-  const transformedGroups = groups.map((g: ProposedGroup) => ({
-    groupId: g.id,
-    course: `${g.courseCode} - ${g.instructor}`,
-    timeSlot: formatTimeSlot(g),
-    peer: {
-      id: g.peerId,
-      name: g.peerName,
-      email: g.peerEmail,
-    },
-    learners: g.learners.map((l: { id: string; name: string; email: string }) => ({
-      id: l.id,
-      name: l.name,
-      email: l.email,
-    })),
-  }));
+  // Calculate group number for each peer
+  const peerGroupCounts = new Map<string, number>();
+  const transformedGroups = groups.map((g: ProposedGroup) => {
+    const peerKey = g.peerId;
+    const groupNumber = (peerGroupCounts.get(peerKey) || 0) + 1;
+    peerGroupCounts.set(peerKey, groupNumber);
+    
+    return {
+      groupId: g.id,
+      course: `${g.courseCode} - ${g.instructor}`,
+      timeSlot: formatTimeSlot(g),
+      peer: {
+        id: g.peerId,
+        name: g.peerName,
+        email: g.peerEmail,
+      },
+      learners: g.learners.map((l: { id: string; name: string; email: string }) => ({
+        id: l.id,
+        name: l.name,
+        email: l.email,
+      })),
+      peerGroupNumber: groupNumber,
+    };
+  });
 
   const handleApprove = (groupId: string) => {
     const group = transformedGroups.find(g => g.groupId === groupId);
@@ -260,12 +269,17 @@ export default function ReviewGroups() {
             {transformedGroups.map((group: any) => (
               <GroupCard
                 key={group.groupId}
-                {...group}
+                groupId={group.groupId}
+                course={group.course}
+                timeSlot={group.timeSlot}
+                peer={group.peer}
+                learners={group.learners}
                 onApprove={handleApprove}
                 onReject={handleReject}
                 selected={selectedIds.has(group.groupId)}
                 onSelectChange={handleSelectChange}
                 selectionMode={selectionMode}
+                peerGroupNumber={group.peerGroupNumber}
               />
             ))}
           </div>

@@ -28,9 +28,10 @@ interface GroupCardProps {
   selected?: boolean;
   onSelectChange?: (groupId: string, selected: boolean) => void;
   selectionMode?: boolean;
+  peerGroupNumber?: number;
 }
 
-export function GroupCard({ groupId, course, timeSlot, learners, peer, onApprove, onReject, selected = false, onSelectChange, selectionMode = false }: GroupCardProps) {
+export function GroupCard({ groupId, course, timeSlot, learners, peer, onApprove, onReject, selected = false, onSelectChange, selectionMode = false, peerGroupNumber = 1 }: GroupCardProps) {
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -51,7 +52,7 @@ export function GroupCard({ groupId, course, timeSlot, learners, peer, onApprove
               data-testid={`checkbox-select-${groupId}`}
             />
           )}
-          <h3 className="text-base font-semibold" data-testid={`text-course-${groupId}`}>{course}</h3>
+          <h3 className="text-base font-semibold" data-testid={`text-course-${groupId}`}>{peer.name} - {course} - Group {peerGroupNumber}</h3>
         </div>
         <Badge variant="secondary" className="text-xs" data-testid={`badge-timeslot-${groupId}`}>
           <Clock className="h-3 w-3 mr-1" />
