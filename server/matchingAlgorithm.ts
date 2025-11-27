@@ -37,6 +37,7 @@ interface LearnerWithSchedule extends LearnerRequest {
 interface PeerWithSchedule extends LearningPeer {
   schedule?: ClassSchedule;
   assignedGroups: number; // Track groups assigned in this run
+  daysUsed: Set<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'>; // Track which days have groups
 }
 
 const DAYS: Array<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'> = [
@@ -88,6 +89,7 @@ export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
     ...peer,
     schedule: volunteerSchedules.find(s => s.email === peer.email),
     assignedGroups: 0, // Track groups assigned in this run
+    daysUsed: new Set(), // Track which days have groups for day variety
   }));
   
   // Track failure reasons for unmatched learners
@@ -298,6 +300,7 @@ function matchLearnersWithPeers(
   // Allow each peer to form multiple groups up to their capacity
   for (const peer of eligiblePeers) {
     const maxGroups = peer.groups || 2; // Default to 2 if not specified
+    peer.daysUsed = new Set(); // Initialize day tracking for this peer
     
     // Keep trying to form groups for this peer until they reach capacity or no learners left
     while (peer.assignedGroups < maxGroups) {
@@ -346,6 +349,7 @@ function matchLearnersWithPeers(
           if (group) {
             groups.push(group);
             peer.assignedGroups++;
+            peer.daysUsed.add(group.timeSlot.day); // Track this day for variety
             
             // Mark learners as matched
             for (const learner of group.learners) {
@@ -405,7 +409,8 @@ function tryFormGroup(
   }
   
   // Find common available time slots across all days
-  const bestSlot = findBestTimeSlot(allSchedules);
+  // Pass peer's daysUsed for day variety across the week
+  const bestSlot = findBestTimeSlot(allSchedules, peer.daysUsed);
   
   if (!bestSlot) {
     return null; // No common time slot found
@@ -428,7 +433,10 @@ function tryFormGroup(
   };
 }
 
-function findBestTimeSlot(schedules: ClassSchedule[]): {
+function findBestTimeSlot(
+  schedules: ClassSchedule[],
+  daysUsed: Set<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'>
+): {
   day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
   start: string;
   end: string;
@@ -437,6 +445,7 @@ function findBestTimeSlot(schedules: ClassSchedule[]): {
     day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
     slot: TimeSlot;
     score: number;
+    dayScore: number; // Prefer days with fewer groups
   } | null = null;
   
   // Try each day
@@ -461,8 +470,16 @@ function findBestTimeSlot(schedules: ClassSchedule[]): {
         score = 1; // Within 2 hours of classes
       }
       
-      if (!bestSlot || score > bestSlot.score) {
-        bestSlot = { day, slot, score };
+      // Calculate day score: prefer days with fewer groups (for variety)
+      // Days not yet used get highest priority (dayScore = 1)
+      // Days already used get lower priority (dayScore = 0)
+      const dayScore = daysUsed.has(day) ? 0 : 1;
+      
+      // Compare: first by time slot score, then by day variety
+      if (!bestSlot || 
+          score > bestSlot.score || 
+          (score === bestSlot.score && dayScore > bestSlot.dayScore)) {
+        bestSlot = { day, slot, score, dayScore };
       }
     }
   }
