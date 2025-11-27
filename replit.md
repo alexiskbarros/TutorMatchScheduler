@@ -31,11 +31,13 @@ Preferred communication style: Simple, everyday language.
 - Local component state for UI interactions
 - No global state library (Redux/Zustand) - server state is the source of truth
 
-**Routing**: Wouter for lightweight client-side routing with five main routes:
+**Routing**: Wouter for lightweight client-side routing with seven main routes:
 - `/` - Dashboard with overview statistics
 - `/run-matching` - Trigger matching runs and monitor progress
 - `/review-groups` - Review and approve/reject proposed groups
+- `/matched` - View approved groups with learner and peer information
 - `/unmatched` - View unmatched participants with failure reasons
+- `/peers-without-groups` - View learning peers with no assigned groups
 - `/settings` - System configuration
 
 **Key UI Patterns**:
@@ -58,7 +60,9 @@ Preferred communication style: Simple, everyday language.
 - `GET /api/groups` - Retrieve proposed groups for review
 - `POST /api/groups/:id/approve` - Approve a group
 - `POST /api/groups/:id/reject` - Reject and re-queue a group
+- `PATCH /api/groups/:id` - Update group manually (add/remove participants)
 - `GET /api/unmatched` - Retrieve unmatched participants
+- `GET /api/peers/without-groups` - Retrieve learning peers with no assigned groups
 
 **Data Storage Strategy**: PostgreSQL database with `DbStorage` class implementing `IStorage` interface
 - **Database**: Replit-provided Neon-backed PostgreSQL database
@@ -94,6 +98,8 @@ Preferred communication style: Simple, everyday language.
 **Instructor Normalization**: Case-insensitive, whitespace-trimmed matching for instructor names (e.g., "Sarah Haughey", "Sarah haughey", "sarah haughey" all treated as same instructor)
 
 **Recent Improvements** (Nov 2025):
+- **Peers Without Groups Page** (Nov 27): New administrative page to view all learning peers without assigned groups, with search functionality
+- **Manual Placement Modal** (Nov 27): Modal dialog allowing assignment of unmatched learners to existing groups from Matched or Review Groups pages
 - **Specific Constraint Failure Reasons** (Nov 26): Unmatched participants now show exactly why they weren't matched:
   - "No eligible peers" - No peers available for the course
   - "No eligible peers with instructor" - No peers for course + specific instructor requirement
