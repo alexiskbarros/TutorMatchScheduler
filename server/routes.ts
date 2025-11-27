@@ -621,6 +621,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/admin/reset-semester - Reset all matching data for new semester
+  app.post("/api/admin/reset-semester", async (req, res) => {
+    try {
+      console.log('Resetting semester data...');
+      await storage.resetSemester();
+      console.log('Semester data reset successfully');
+      
+      res.json({
+        success: true,
+        message: 'All matching data has been cleared. Ready for new semester.',
+      });
+    } catch (error) {
+      console.error('Error resetting semester:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

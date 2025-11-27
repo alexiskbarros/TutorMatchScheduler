@@ -179,6 +179,13 @@ export class MemStorage implements IStorage {
     }
     return Array.from(approvedEmails);
   }
+
+  async resetSemester(): Promise<void> {
+    this.matchingRuns.clear();
+    this.proposedGroups.clear();
+    this.unmatchedByRun.clear();
+    this.groupsByRun.clear();
+  }
 }
 
 import { DbStorage } from "./dbStorage";

@@ -1,8 +1,21 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useQuery } from "@tanstack/react-query";
-import { CheckCircle, Database, Clock, Users, GraduationCap, Layers, Settings2 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { CheckCircle, Database, Clock, Users, GraduationCap, Layers, Settings2, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import React from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SettingsResponse {
   success: boolean;
@@ -31,11 +44,38 @@ interface SettingsResponse {
 }
 
 export default function Settings() {
+  const [showResetDialog, setShowResetDialog] = React.useState(false);
+  const { toast } = useToast();
   const { data, isLoading } = useQuery<SettingsResponse>({
     queryKey: ['/api/settings'],
   });
 
   const settings = data?.settings;
+
+  const resetMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/admin/reset-semester');
+      return response.json();
+    },
+    onSuccess: () => {
+      setShowResetDialog(false);
+      toast({
+        title: "Semester Reset Complete",
+        description: "All matching data has been cleared. Ready for new semester.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/matching-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/unmatched'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to reset semester. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':').map(Number);
@@ -217,6 +257,32 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+          <Card data-testid="card-semester-reset">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Semester Reset</CardTitle>
+              </div>
+              <CardDescription>
+                Clear all matching data for a new semester
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Reset the system by clearing all matching runs, proposed groups, and unmatched participants. This action is permanent and cannot be undone.
+              </p>
+              <Button
+                variant="destructive"
+                onClick={() => setShowResetDialog(true)}
+                disabled={resetMutation.isPending}
+                data-testid="button-reset-semester"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {resetMutation.isPending ? "Resetting..." : "Reset for New Semester"}
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card data-testid="card-about">
             <CardHeader>
               <CardTitle>About</CardTitle>
@@ -239,6 +305,32 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset Semester?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete all matching runs, proposed groups, and unmatched participant data. This action cannot be undone. Are you sure?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-2 text-sm">
+                <p className="font-medium">This will clear:</p>
+                <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                  <li>All matching run records</li>
+                  <li>All proposed groups</li>
+                  <li>All unmatched participant data</li>
+                </ul>
+              </div>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => resetMutation.mutate()}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Reset
+              </AlertDialogAction>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </div>

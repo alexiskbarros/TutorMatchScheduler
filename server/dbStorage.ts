@@ -303,4 +303,15 @@ export class DbStorage implements IStorage {
     }
     return Array.from(emails);
   }
+
+  async resetSemester(): Promise<void> {
+    // Delete all unmatched participants first (foreign key constraint)
+    await this.db.delete(unmatchedParticipantsTable);
+    
+    // Delete all proposed groups (foreign key constraint)
+    await this.db.delete(proposedGroupsTable);
+    
+    // Delete all matching runs
+    await this.db.delete(matchingRunsTable);
+  }
 }
