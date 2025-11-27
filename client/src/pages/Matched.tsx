@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { ProposedGroup } from "@shared/schema";
-import { Users, Mail } from "lucide-react";
+import { Users, Mail, Download } from "lucide-react";
 
 function formatTimeSlot(group: ProposedGroup): string {
   const dayMap: Record<string, string> = {
@@ -45,6 +45,44 @@ function getGroupEmailLink(group: any): string {
   return `mailto:${to}?subject=${subject}`;
 }
 
+function exportToCSV(groups: any[]): void {
+  if (groups.length === 0) return;
+  
+  // Build CSV headers
+  const headers = ['Group ID', 'Course Code', 'Peer Name', 'Peer Email', 'Status', 'Day', 'Start Time', 'End Time', 'Learner Names', 'Learner Instructors', 'Learner Emails'];
+  
+  // Build CSV rows
+  const rows = groups.map(g => [
+    g.id,
+    g.courseCode,
+    g.peerName,
+    g.peerEmail,
+    g.status,
+    g.timeSlot.day,
+    g.timeSlot.start,
+    g.timeSlot.end,
+    g.learners.map((l: any) => l.name).join('; '),
+    g.learners.map((l: any) => l.instructor || 'N/A').join('; '),
+    g.learners.map((l: any) => l.email).join('; '),
+  ]);
+  
+  // Create CSV string
+  const csv = [headers.join(','), ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n');
+  
+  // Create blob and trigger download
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', `matched-groups-${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 export default function Matched() {
   const { data: groupsData, isLoading } = useQuery<{ success: boolean; groups: ProposedGroup[] }>({
     queryKey: ['/api/groups'],
@@ -73,11 +111,24 @@ export default function Matched() {
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Users className="w-5 h-5" />
-        <span className="text-sm font-medium">
-          {groupsWithNumbers.length} approved group{groupsWithNumbers.length !== 1 ? 's' : ''}
-        </span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Users className="w-5 h-5" />
+          <span className="text-sm font-medium">
+            {groupsWithNumbers.length} approved group{groupsWithNumbers.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        {groupsWithNumbers.length > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => exportToCSV(groupsWithNumbers)}
+            data-testid="button-export-matched-csv"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export to CSV
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
