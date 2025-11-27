@@ -8,6 +8,7 @@ import {
   loadLearnerSchedules,
 } from "./googleSheets";
 import { runMatchingAlgorithm } from "./matchingAlgorithm";
+import { generateMatchConfirmationEmail } from "./emailTemplate";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/matching-runs - Start a new matching run
@@ -191,12 +192,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const results = [];
+      const runs = await storage.getAllMatchingRuns();
+      const latestRun = runs[0];
+      
       for (const groupId of groupIds) {
         const group = await storage.getGroup(groupId);
         if (group) {
           await storage.updateGroupStatus(groupId, 'approved');
           results.push({ groupId, status: 'approved' });
-          console.log(`Bulk approved group ${groupId}: ${group.peerEmail}, ${group.learners.map(l => l.email).join(', ')}`);
+          
+          // Calculate group number for this peer
+          if (latestRun) {
+            const allGroups = await storage.getGroupsByRunId(latestRun.id);
+            const peerGroups = allGroups.filter(g => g.peerId === group.peerId && g.status === 'approved');
+            const peerGroupNumber = peerGroups.length;
+            
+            // Generate confirmation email
+            const { subject, body } = generateMatchConfirmationEmail(group, peerGroupNumber);
+            console.log(`Bulk approved group ${groupId}: ${group.peerEmail}, ${group.learners.map(l => l.email).join(', ')}`);
+            console.log(`Email subject: ${subject}`);
+          }
         } else {
           results.push({ groupId, status: 'not_found' });
         }
@@ -231,9 +246,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update group status
       await storage.updateGroupStatus(req.params.id, 'approved');
 
-      // TODO: Send email notifications to all participants
+      // Calculate group number for this peer
+      const runs = await storage.getAllMatchingRuns();
+      const latestRun = runs[0];
+      let peerGroupNumber = 1;
+      
+      if (latestRun) {
+        const allGroups = await storage.getGroupsByRunId(latestRun.id);
+        const peerGroups = allGroups.filter(g => g.peerId === group.peerId && g.status === 'approved');
+        peerGroupNumber = peerGroups.length;
+      }
+
+      // Generate confirmation email
+      const { subject, body } = generateMatchConfirmationEmail(group, peerGroupNumber);
+
+      // Log email that would be sent (in production, this would send via email service)
       console.log(`Sending email notifications for group ${req.params.id}`);
       console.log(`Recipients: ${group.peerEmail}, ${group.learners.map(l => l.email).join(', ')}`);
+      console.log(`Subject: ${subject}`);
+      console.log(`Body: ${body}`);
 
       res.json({
         success: true,
