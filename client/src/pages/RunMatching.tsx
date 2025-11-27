@@ -40,7 +40,7 @@ export default function RunMatching() {
       console.log('Matching run started:', data);
       toast({
         title: "Matching Run Started",
-        description: "Processing student and tutor data from Google Sheets...",
+        description: "Processing student and Learning Peer data from Google Sheets...",
       });
       
       const runId = data.runId;

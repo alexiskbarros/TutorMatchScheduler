@@ -14,7 +14,7 @@ export default function StatCardExample() {
       <StatCard
         title="Total Peers"
         value={89}
-        subtitle="Available tutors"
+        subtitle="Available Learning Peers"
         icon={Users}
       />
       <StatCard

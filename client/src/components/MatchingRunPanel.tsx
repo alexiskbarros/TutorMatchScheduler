@@ -37,7 +37,7 @@ export function MatchingRunPanel({
       <CardHeader>
         <CardTitle className="text-xl">Matching Run</CardTitle>
         <CardDescription>
-          Trigger a new matching run to process current student and tutor data
+          Trigger a new matching run to process current student and Learning Peer data
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

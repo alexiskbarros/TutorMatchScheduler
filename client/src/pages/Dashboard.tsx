@@ -87,7 +87,7 @@ export default function Dashboard() {
           <StatCard
             title="Total Peers"
             value={stats.totalPeers}
-            subtitle="Available tutors"
+            subtitle="Available Learning Peers"
             icon={Users}
           />
           <StatCard

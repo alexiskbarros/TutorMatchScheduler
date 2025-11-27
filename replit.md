@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Semester Volunteer Matching System is an administrative tool for Mount Royal University that automates the process of matching students (learners) seeking academic help with volunteer tutors (learning peers). The system ingests participant data from Google Sheets, runs a constraint-based matching algorithm, and provides an administrative interface for reviewing and managing proposed groups.
+The Semester Volunteer Matching System is an administrative tool for Mount Royal University that automates the process of matching students (learners) seeking academic help with volunteer Learning Peers. The system ingests participant data from Google Sheets, runs a constraint-based matching algorithm, and provides an administrative interface for reviewing and managing proposed groups.
 
 **Core Purpose**: Efficiently match 1-4 learners per group with qualified learning peers based on course requirements, instructor preferences, and schedule availability, while minimizing manual administrative overhead.
 

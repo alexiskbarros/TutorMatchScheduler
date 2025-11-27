@@ -69,7 +69,7 @@ export default function Matched() {
       <div>
         <h1 className="text-3xl font-semibold" data-testid="text-page-title">Matched Groups</h1>
         <p className="text-muted-foreground mt-1">
-          Approved groups ready for tutoring sessions
+          Approved groups ready for Learning Peer sessions
         </p>
       </div>
 
