@@ -226,14 +226,33 @@ function groupByInstructor(
   learners: LearnerWithSchedule[]
 ): Record<string, LearnerWithSchedule[]> {
   const grouped: Record<string, LearnerWithSchedule[]> = {};
+  const instructorKeys: string[] = []; // Track the order of keys
   
   for (const learner of learners) {
     // Use canonical instructor name to handle abbreviations (Pete/Peter, etc.)
     const canonicalInstructor = getCanonicalInstructorName(learner.instructor);
-    if (!grouped[canonicalInstructor]) {
-      grouped[canonicalInstructor] = [];
+    
+    // Check if this instructor matches any existing group
+    let foundMatchingKey: string | null = null;
+    for (const existingKey of instructorKeys) {
+      // Use instructorsMatch to check if these are the same person
+      if (instructorsMatch(canonicalInstructor, existingKey)) {
+        foundMatchingKey = existingKey;
+        break;
+      }
     }
-    grouped[canonicalInstructor].push(learner);
+    
+    if (foundMatchingKey) {
+      // Add to existing group
+      grouped[foundMatchingKey].push(learner);
+    } else {
+      // Create new group
+      if (!grouped[canonicalInstructor]) {
+        grouped[canonicalInstructor] = [];
+        instructorKeys.push(canonicalInstructor);
+      }
+      grouped[canonicalInstructor].push(learner);
+    }
   }
   
   return grouped;

@@ -304,6 +304,7 @@ export function normalizeInstructorName(name: string): string {
 
 // Create a canonical instructor name for grouping that handles abbreviations
 // This ensures "Pete Jackson" and "Peter Jackson" are treated as the same instructor
+// Also handles "Dr. Kurosawa" and "Akira Kurosawa" by matching on last name
 export function getCanonicalInstructorName(name: string): string {
   const normalized = normalizeInstructorName(name);
   if (!normalized) return '';
@@ -311,8 +312,17 @@ export function getCanonicalInstructorName(name: string): string {
   const parts = normalized.split(' ');
   if (parts.length === 0) return normalized;
   
-  // Normalize first name if it's a common abbreviation
+  // If we only have a last name (e.g., "kurosawa" from "Dr. Kurosawa")
+  // Return it as-is so it can match with any first name + same last name
+  if (parts.length === 1) {
+    return normalized;
+  }
+  
+  // We have first name + last name (or more)
   const firstName = parts[0];
+  const lastName = parts.slice(1).join(' ');
+  
+  // Normalize first name if it's a common abbreviation
   const abbrev = firstNameAbbreviations[firstName] || [];
   
   // Use the longest form of the name (e.g., "peter" instead of "pete")
@@ -330,7 +340,8 @@ export function getCanonicalInstructorName(name: string): string {
     }
   }
   
-  return [canonicalFirstName, ...parts.slice(1)].join(' ');
+  // Return canonical form: canonical first name + last name
+  return `${canonicalFirstName} ${lastName}`;
 }
 
 // Check if two instructor names match (accounting for variations)
