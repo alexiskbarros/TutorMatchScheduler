@@ -175,20 +175,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const latestRun = runs[0]; // Most recent run
       
-      // Get all approved groups from all runs (these are the "Matched" groups)
-      const allGroups = await storage.getAllGroups();
-      const approvedGroups = allGroups.filter(g => g.status === 'approved');
+      // If incremental matching (newRequestsOnly: true), preserve approved groups from all runs
+      // If full matching (newRequestsOnly: false), only show groups from latest run
+      let groups;
       
-      // Get all pending groups from the latest run (for review)
-      const latestRunGroups = await storage.getGroupsByRunId(latestRun.id);
-      const pendingGroups = latestRunGroups.filter(g => g.status === 'pending');
-      
-      // Combine: all approved groups + latest run's pending groups
-      const combinedGroups = [...approvedGroups, ...pendingGroups];
+      if (latestRun.newRequestsOnly) {
+        // Incremental: Show all approved groups + latest run's pending groups
+        const allGroups = await storage.getAllGroups();
+        const approvedGroups = allGroups.filter(g => g.status === 'approved');
+        
+        const latestRunGroups = await storage.getGroupsByRunId(latestRun.id);
+        const pendingGroups = latestRunGroups.filter(g => g.status === 'pending');
+        
+        groups = [...approvedGroups, ...pendingGroups];
+      } else {
+        // Full match: Only show groups from latest run (clears previous matches)
+        groups = await storage.getGroupsByRunId(latestRun.id);
+      }
       
       res.json({
         success: true,
-        groups: combinedGroups,
+        groups,
       });
     } catch (error) {
       console.error('Error fetching groups:', error);
