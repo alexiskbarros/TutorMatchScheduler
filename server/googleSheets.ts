@@ -178,7 +178,7 @@ export async function loadLearningPeers(): Promise<LearningPeer[]> {
       email,                                     // Column 2 = index 1
       preferredName: (row[4] || '').trim(),     // Column 5 (Preferred Name) = index 4
       lastName: (row[5] || '').trim(),          // Column 6 = index 5
-      groups: parseInt(row[6] || '0', 10) || 0, // Column 7 = index 6
+      groups: parseInt(row[8] || '0', 10) || 0, // Column 9 = index 8
       courseCode1: (row[9] || '').trim() || undefined,  // Column 10 = index 9
       instructor1: (row[10] || '').trim() || undefined, // Column 11 = index 10
       courseCode2: (row[11] || '').trim() || undefined, // Column 12 = index 11
