@@ -1,4 +1,4 @@
-import { Home, PlayCircle, CheckCircle, AlertCircle, Settings } from "lucide-react";
+import { Home, PlayCircle, CheckCircle, CheckSquare, AlertCircle, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -28,6 +28,11 @@ const menuItems = [
     title: "Review Groups",
     url: "/review-groups",
     icon: CheckCircle,
+  },
+  {
+    title: "Matched",
+    url: "/matched",
+    icon: CheckSquare,
   },
   {
     title: "Unmatched Report",
