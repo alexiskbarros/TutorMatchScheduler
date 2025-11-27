@@ -11,7 +11,7 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 import { useLocation } from "wouter";
-import logoUrl from "@assets/ca_umtro_1763423100867.gif";
+import logoUrl from "@assets/MRU-TripleStack-CMYK_1764265137904.png";
 
 const menuItems = [
   {
