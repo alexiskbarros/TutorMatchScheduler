@@ -82,25 +82,32 @@ export function GroupCard({ groupId, course, courseCode, timeSlot, learners, pee
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
             Learners ({learners.length})
           </p>
-          <div className="space-y-2">
-            {learners.map((learner) => (
-              <div key={learner.id} className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                    {getInitials(learner.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="text-sm" data-testid={`text-learner-name-${learner.id}`}>{learner.name}</p>
-                  <div className="flex flex-col gap-1">
-                    <p className="text-xs text-muted-foreground">{learner.email}</p>
-                    {learner.instructor && (
-                      <p className="text-xs text-muted-foreground font-medium">Instructor: {learner.instructor}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="border rounded-md overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted">
+                  <th className="px-3 py-2 text-left font-medium text-xs">Name</th>
+                  <th className="px-3 py-2 text-left font-medium text-xs">Instructor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {learners.map((learner, idx) => (
+                  <tr key={learner.id} className={idx !== learners.length - 1 ? 'border-b' : ''}>
+                    <td className="px-3 py-2">
+                      <p className="text-sm" data-testid={`text-learner-name-${learner.id}`}>{learner.name}</p>
+                      <p className="text-xs text-muted-foreground">{learner.email}</p>
+                    </td>
+                    <td className="px-3 py-2">
+                      {learner.instructor ? (
+                        <p className="text-sm" data-testid={`text-instructor-${learner.id}`}>{learner.instructor}</p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">—</p>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </CardContent>
