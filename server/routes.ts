@@ -165,20 +165,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/groups", async (req, res) => {
     try {
       const runs = await storage.getAllMatchingRuns();
-      const latestRun = runs[0]; // Most recent
       
-      if (!latestRun) {
+      if (runs.length === 0) {
         return res.json({
           success: true,
           groups: [],
         });
       }
 
-      const allGroups = await storage.getGroupsByRunId(latestRun.id);
+      const latestRun = runs[0]; // Most recent run
+      
+      // Get all approved groups from all runs (these are the "Matched" groups)
+      const allGroups = await storage.getAllGroups();
+      const approvedGroups = allGroups.filter(g => g.status === 'approved');
+      
+      // Get all pending groups from the latest run (for review)
+      const latestRunGroups = await storage.getGroupsByRunId(latestRun.id);
+      const pendingGroups = latestRunGroups.filter(g => g.status === 'pending');
+      
+      // Combine: all approved groups + latest run's pending groups
+      const combinedGroups = [...approvedGroups, ...pendingGroups];
       
       res.json({
         success: true,
-        groups: allGroups,
+        groups: combinedGroups,
       });
     } catch (error) {
       console.error('Error fetching groups:', error);

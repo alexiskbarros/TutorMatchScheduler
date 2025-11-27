@@ -25,6 +25,7 @@ export interface IStorage {
   // Proposed Groups
   createGroup(runId: string, group: InsertProposedGroup): Promise<ProposedGroup>;
   getGroup(id: string): Promise<ProposedGroup | undefined>;
+  getAllGroups(): Promise<ProposedGroup[]>;
   getGroupsByRunId(runId: string): Promise<ProposedGroup[]>;
   updateGroupStatus(id: string, status: 'pending' | 'approved' | 'rejected'): Promise<void>;
   updateGroup(id: string, updates: Partial<Omit<ProposedGroup, 'id' | 'status'>>): Promise<void>;
@@ -115,6 +116,10 @@ export class MemStorage implements IStorage {
 
   async getGroup(id: string): Promise<ProposedGroup | undefined> {
     return this.proposedGroups.get(id);
+  }
+
+  async getAllGroups(): Promise<ProposedGroup[]> {
+    return Array.from(this.proposedGroups.values());
   }
 
   async getGroupsByRunId(runId: string): Promise<ProposedGroup[]> {

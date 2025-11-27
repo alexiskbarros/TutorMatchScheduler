@@ -178,6 +178,28 @@ export class DbStorage implements IStorage {
     };
   }
 
+  async getAllGroups(): Promise<ProposedGroup[]> {
+    const groups = await this.db
+      .select()
+      .from(proposedGroupsTable);
+
+    return groups.map(group => ({
+      id: group.id,
+      courseCode: group.courseCode,
+      instructor: group.instructor,
+      peerId: group.peerId,
+      peerName: group.peerName,
+      peerEmail: group.peerEmail,
+      learners: group.learners as Array<{id: string; name: string; email: string; instructor?: string}>,
+      timeSlot: {
+        day: group.timeSlotDay,
+        start: group.timeSlotStart,
+        end: group.timeSlotEnd,
+      },
+      status: group.status,
+    }));
+  }
+
   async getGroupsByRunId(runId: string): Promise<ProposedGroup[]> {
     const groups = await this.db
       .select()
