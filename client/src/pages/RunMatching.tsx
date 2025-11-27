@@ -338,6 +338,7 @@ export default function RunMatching() {
           isRunning={isRunning}
           progress={progress}
           newRequestsOnly={newRequestsOnly}
+          onNewRequestsOnlyChange={setNewRequestsOnly}
           onStartRun={handleStartRun}
           onSyncData={handleSyncData}
         />

@@ -3,10 +3,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { CheckCircle, Database, Clock, Users, GraduationCap, Layers, Settings2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import React from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,7 +44,7 @@ interface SettingsResponse {
 }
 
 export default function Settings() {
-  const [showResetDialog, setShowResetDialog] = React.useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const { toast } = useToast();
   const { data, isLoading } = useQuery<SettingsResponse>({
     queryKey: ['/api/settings'],

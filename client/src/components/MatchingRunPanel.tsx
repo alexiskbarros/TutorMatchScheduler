@@ -12,6 +12,7 @@ interface MatchingRunPanelProps {
   isRunning?: boolean;
   progress?: number;
   newRequestsOnly?: boolean;
+  onNewRequestsOnlyChange?: (checked: boolean) => void;
   onStartRun: (newRequestsOnly: boolean) => void;
   onSyncData: () => void;
 }
@@ -22,6 +23,7 @@ export function MatchingRunPanel({
   isRunning = false,
   progress = 0,
   newRequestsOnly = false,
+  onNewRequestsOnlyChange,
   onStartRun,
   onSyncData
 }: MatchingRunPanelProps) {
@@ -87,7 +89,7 @@ export function MatchingRunPanel({
             id="new-requests-only"
             checked={newRequestsOnly}
             onCheckedChange={(checked) => {
-              // This will be handled by parent component
+              onNewRequestsOnlyChange?.(checked === true);
             }}
             disabled={isRunning}
             data-testid="checkbox-new-requests-only"
