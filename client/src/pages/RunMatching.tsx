@@ -3,12 +3,22 @@ import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function RunMatching() {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [newRequestsOnly, setNewRequestsOnly] = useState(false);
   const [dataSourceSynced, setDataSourceSynced] = useState<Date | undefined>(undefined);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const { toast } = useToast();
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -188,6 +198,16 @@ export default function RunMatching() {
   });
 
   const handleStartRun = (newReqOnly: boolean) => {
+    // If not using "Match New Requests Only", show warning about clearing previous matches
+    if (!newReqOnly) {
+      setShowClearConfirm(true);
+      return;
+    }
+    proceedWithMatching(newReqOnly);
+  };
+
+  const proceedWithMatching = (newReqOnly: boolean) => {
+    setShowClearConfirm(false);
     setNewRequestsOnly(newReqOnly);
     setIsRunning(true);
     setProgress(0);
@@ -343,6 +363,29 @@ export default function RunMatching() {
           onSyncData={handleSyncData}
         />
       </div>
+
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent data-testid="dialog-clear-matches-confirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear Previous Matches?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're about to run a full matching process. This will clear all previously proposed groups and re-match all learners from scratch. 
+              <br /><br />
+              If you want to preserve your approved matches and only process new requests, enable "Match New Requests Only" before running.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3 justify-end pt-4">
+            <AlertDialogCancel data-testid="button-cancel-full-match">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => proceedWithMatching(false)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-full-match"
+            >
+              Continue Full Match
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
