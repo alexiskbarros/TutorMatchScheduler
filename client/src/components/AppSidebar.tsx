@@ -40,7 +40,7 @@ const menuItems = [
     icon: AlertCircle,
   },
   {
-    title: "Peers Without Groups",
+    title: "Learning Peers Without Groups",
     url: "/peers-without-groups",
     icon: Users2,
   },

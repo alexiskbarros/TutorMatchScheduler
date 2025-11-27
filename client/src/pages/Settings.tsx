@@ -190,7 +190,7 @@ export default function Settings() {
                   </div>
                   <div>
                     <p className="text-2xl font-semibold">{settings?.statistics.totalPeers || 0}</p>
-                    <p className="text-xs text-muted-foreground">Peers (Latest)</p>
+                    <p className="text-xs text-muted-foreground">Learning Peers (Latest)</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
