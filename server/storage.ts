@@ -166,6 +166,19 @@ export class MemStorage implements IStorage {
     }
     return this.unmatchedByRun.get(latestRun.id) || [];
   }
+
+  async getApprovedLearnerEmails(): Promise<string[]> {
+    const approvedEmails = new Set<string>();
+    const groups = Array.from(this.proposedGroups.values());
+    for (const group of groups) {
+      if (group.status === 'approved') {
+        for (const learner of group.learners) {
+          approvedEmails.add(learner.email);
+        }
+      }
+    }
+    return Array.from(approvedEmails);
+  }
 }
 
 import { DbStorage } from "./dbStorage";

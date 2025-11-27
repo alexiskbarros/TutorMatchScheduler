@@ -31,9 +31,13 @@ export class DbStorage implements IStorage {
 
   // Matching Runs
   async createMatchingRun(insertRun: InsertMatchingRun): Promise<MatchingRun> {
+    const dbValues = {
+      ...insertRun,
+      newRequestsOnly: insertRun.newRequestsOnly ? 1 : 0,
+    };
     const [run] = await this.db
       .insert(matchingRunsTable)
-      .values(insertRun)
+      .values(dbValues)
       .returning();
     
     return {
@@ -45,6 +49,7 @@ export class DbStorage implements IStorage {
       unmatchedLearners: run.unmatchedLearners,
       proposedGroups: run.proposedGroups,
       status: run.status,
+      newRequestsOnly: Boolean(run.newRequestsOnly),
     };
   }
 
@@ -65,6 +70,7 @@ export class DbStorage implements IStorage {
       unmatchedLearners: run.unmatchedLearners,
       proposedGroups: run.proposedGroups,
       status: run.status,
+      newRequestsOnly: Boolean(run.newRequestsOnly),
     };
   }
 
@@ -83,6 +89,7 @@ export class DbStorage implements IStorage {
       unmatchedLearners: run.unmatchedLearners,
       proposedGroups: run.proposedGroups,
       status: run.status,
+      newRequestsOnly: Boolean(run.newRequestsOnly),
     }));
   }
 
@@ -275,5 +282,25 @@ export class DbStorage implements IStorage {
     const latestRun = await this.getLatestMatchingRun();
     if (!latestRun) return [];
     return this.getUnmatchedParticipants(latestRun.id);
+  }
+
+  async getApprovedLearnerEmails(): Promise<string[]> {
+    const approvedGroups = await this.db
+      .select()
+      .from(proposedGroupsTable)
+      .where(eq(proposedGroupsTable.status, 'approved'));
+
+    const emails = new Set<string>();
+    for (const group of approvedGroups) {
+      const learners = group.learners as any[];
+      if (Array.isArray(learners)) {
+        for (const learner of learners) {
+          if (learner.email) {
+            emails.add(learner.email);
+          }
+        }
+      }
+    }
+    return Array.from(emails);
   }
 }

@@ -23,6 +23,7 @@ interface MatchingInput {
   peers: LearningPeer[];
   learnerSchedules: ClassSchedule[];
   volunteerSchedules: ClassSchedule[];
+  excludedLearnerEmails?: string[];
 }
 
 interface MatchingResult {
@@ -77,10 +78,14 @@ type FailureReason = {
 };
 
 export function runMatchingAlgorithm(input: MatchingInput): MatchingResult {
-  const { requests, peers, learnerSchedules, volunteerSchedules } = input;
+  const { requests, peers, learnerSchedules, volunteerSchedules, excludedLearnerEmails = [] } = input;
+  const excludedSet = new Set(excludedLearnerEmails);
+  
+  // Filter out already-matched learners
+  const newRequests = requests.filter(req => !excludedSet.has(req.email));
   
   // Attach schedules to learners and peers
-  const learnersWithSchedules: LearnerWithSchedule[] = requests.map(req => ({
+  const learnersWithSchedules: LearnerWithSchedule[] = newRequests.map(req => ({
     ...req,
     schedule: learnerSchedules.find(s => s.email === req.email),
   }));

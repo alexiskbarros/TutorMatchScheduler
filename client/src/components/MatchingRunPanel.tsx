@@ -1,15 +1,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlayCircle, RefreshCw, CheckCircle, Database } from "lucide-react";
+import { PlayCircle, RefreshCw, CheckCircle, Database, Plus } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface MatchingRunPanelProps {
   lastRun?: Date;
   dataSourceSynced?: Date;
   isRunning?: boolean;
   progress?: number;
-  onStartRun: () => void;
+  newRequestsOnly?: boolean;
+  onStartRun: (newRequestsOnly: boolean) => void;
   onSyncData: () => void;
 }
 
@@ -18,6 +21,7 @@ export function MatchingRunPanel({
   dataSourceSynced,
   isRunning = false,
   progress = 0,
+  newRequestsOnly = false,
   onStartRun,
   onSyncData
 }: MatchingRunPanelProps) {
@@ -78,9 +82,29 @@ export function MatchingRunPanel({
           </div>
         )}
 
+        <div className="flex items-center gap-3 p-3 bg-muted rounded-md">
+          <Checkbox
+            id="new-requests-only"
+            checked={newRequestsOnly}
+            onCheckedChange={(checked) => {
+              // This will be handled by parent component
+            }}
+            disabled={isRunning}
+            data-testid="checkbox-new-requests-only"
+          />
+          <div className="flex-1">
+            <Label htmlFor="new-requests-only" className="cursor-pointer font-medium">
+              Match New Requests Only
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Skip already-matched learners and process only new requests
+            </p>
+          </div>
+        </div>
+
         <div className="flex gap-2">
           <Button
-            onClick={onStartRun}
+            onClick={() => onStartRun(newRequestsOnly)}
             disabled={isRunning}
             className="flex-1"
             data-testid="button-start-matching"

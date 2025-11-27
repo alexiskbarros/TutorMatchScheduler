@@ -98,6 +98,7 @@ Preferred communication style: Simple, everyday language.
 **Instructor Normalization**: Case-insensitive, whitespace-trimmed matching for instructor names (e.g., "Sarah Haughey", "Sarah haughey", "sarah haughey" all treated as same instructor)
 
 **Recent Improvements** (Nov 2025):
+- **Incremental Matching** (Nov 27): "Match New Requests Only" toggle on Run Matching page to process only new learners while skipping already-approved matches, avoiding re-matching and preserving established groups
 - **Matched Groups CSV Export** (Nov 27): Export approved groups to CSV file with all group details, participant information, and scheduling
 - **Match Confirmation Email Template** (Nov 27): Integrated professional email template for group notifications with course info, meeting times, and peer learning guidelines
 - **Updated Terminology** (Nov 27): Changed all instances of "tutors" to "Learning Peers" throughout platform for consistency

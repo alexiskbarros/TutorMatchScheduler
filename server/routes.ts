@@ -14,7 +14,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/matching-runs - Start a new matching run
   app.post("/api/matching-runs", async (req, res) => {
     try {
-      console.log('Starting new matching run...');
+      const { newRequestsOnly } = req.body || {};
+      console.log(`Starting new matching run... (newRequestsOnly: ${newRequestsOnly})`);
       
       // Create initial run record
       const run = await storage.createMatchingRun({
@@ -25,6 +26,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         unmatchedLearners: 0,
         proposedGroups: 0,
         status: 'running',
+        newRequestsOnly: newRequestsOnly || false,
       });
 
       // Ingest data from Google Sheets asynchronously
@@ -41,6 +43,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`Loaded ${requests.length} requests, ${peers.length} peers`);
 
+          // Get approved learner emails if doing incremental matching
+          let excludedLearnerEmails: string[] = [];
+          if (newRequestsOnly) {
+            excludedLearnerEmails = await storage.getApprovedLearnerEmails();
+            console.log(`Incremental matching: Excluding ${excludedLearnerEmails.length} already-approved learners`);
+          }
+
           // Run matching algorithm
           console.log('Running matching algorithm...');
           const result = runMatchingAlgorithm({
@@ -48,6 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             peers,
             learnerSchedules,
             volunteerSchedules,
+            excludedLearnerEmails,
           });
 
           console.log(`Matched ${result.groups.length} groups, ${result.unmatched.length} unmatched`);

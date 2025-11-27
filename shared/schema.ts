@@ -90,6 +90,7 @@ export const matchingRunSchema = z.object({
   unmatchedLearners: z.number(),
   proposedGroups: z.number(),
   status: z.enum(['running', 'completed', 'failed']),
+  newRequestsOnly: z.boolean().default(false),
 });
 
 export type MatchingRun = z.infer<typeof matchingRunSchema>;
@@ -129,6 +130,7 @@ export const matchingRunsTable = pgTable('matching_runs', {
   unmatchedLearners: integer('unmatched_learners').notNull().default(0),
   proposedGroups: integer('proposed_groups').notNull().default(0),
   status: statusEnum('status').notNull().default('running'),
+  newRequestsOnly: integer('new_requests_only').notNull().default(0), // Boolean stored as 0/1
 });
 
 export const proposedGroupsTable = pgTable('proposed_groups', {
