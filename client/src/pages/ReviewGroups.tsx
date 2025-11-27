@@ -40,6 +40,8 @@ export default function ReviewGroups() {
     queryKey: ['/api/groups'],
   });
 
+  const pendingGroups = (groupsData?.groups || []).filter(group => group.status === 'pending');
+
   const approveMutation = useMutation({
     mutationFn: async (groupId: string) => {
       const response = await apiRequest('POST', `/api/groups/${groupId}/approve`);
@@ -91,11 +93,9 @@ export default function ReviewGroups() {
     },
   });
 
-  const groups = groupsData?.groups || [] as ProposedGroup[];
-
   // Calculate group number for each peer
   const peerGroupCounts = new Map<string, number>();
-  const transformedGroups = groups.map((g: ProposedGroup) => {
+  const transformedGroups = pendingGroups.map((g: ProposedGroup) => {
     const peerKey = g.peerId;
     const groupNumber = (peerGroupCounts.get(peerKey) || 0) + 1;
     peerGroupCounts.set(peerKey, groupNumber);

@@ -150,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/groups - Get all pending groups
+  // GET /api/groups - Get all groups (pending and approved)
   app.get("/api/groups", async (req, res) => {
     try {
       const runs = await storage.getAllMatchingRuns();
@@ -164,11 +164,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allGroups = await storage.getGroupsByRunId(latestRun.id);
-      const pendingGroups = allGroups.filter(g => g.status === 'pending');
       
       res.json({
         success: true,
-        groups: pendingGroups,
+        groups: allGroups,
       });
     } catch (error) {
       console.error('Error fetching groups:', error);
