@@ -318,8 +318,14 @@ function matchLearnersWithPeers(
       const combinations = generateCombinations(currentAvailable, groupSize, 20);
       
       for (const candidateLearners of combinations) {
-        // Normalize instructor name to prevent duplicate groups from case sensitivity
-        const instructorName = requiredInstructor || peer.instructor1 || '';
+        // Only use instructor if it's required by the learners
+        // If instructorMatchRequired is false, use empty string so all learners mix freely
+        let instructorName = '';
+        if (instructorMatchRequired && requiredInstructor) {
+          instructorName = requiredInstructor;
+        } else if (instructorMatchRequired) {
+          instructorName = peer.instructor1 || '';
+        }
         const normalizedInstructor = normalizeInstructorName(instructorName);
         
         const group = tryFormGroup(
