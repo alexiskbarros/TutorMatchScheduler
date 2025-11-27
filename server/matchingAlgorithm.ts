@@ -44,8 +44,8 @@ const DAYS: Array<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'> = 
 ];
 
 // Generate combinations of items with a given size
-// Limits the number of combinations returned for efficiency
-function generateCombinations<T>(items: T[], size: number, maxCombinations: number = 20): T[][] {
+// Generates more combinations for better schedule matching coverage
+function generateCombinations<T>(items: T[], size: number, maxCombinations: number = 100): T[][] {
   const combinations: T[][] = [];
   
   function backtrack(start: number, current: T[]) {
@@ -313,8 +313,10 @@ function matchLearnersWithPeers(
       
       for (let groupSize = Math.min(4, currentAvailable.length); groupSize >= 1 && !groupFormed; groupSize--) {
         // Generate combinations of learners
-        // Limit total combinations tried per group size for efficiency
-        const combinations = generateCombinations(currentAvailable, groupSize, 20);
+        // Use higher limit for better schedule conflict resolution
+        // Smaller group sizes get even more combinations to try
+        const combinationLimit = groupSize === 1 ? 50 : groupSize === 2 ? 100 : 75;
+        const combinations = generateCombinations(currentAvailable, groupSize, combinationLimit);
         
         for (const candidateLearners of combinations) {
           // Only use instructor if it's required by the learners
