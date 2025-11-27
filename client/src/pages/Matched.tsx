@@ -30,6 +30,18 @@ export default function Matched() {
 
   const approvedGroups = (groupsData?.groups || []).filter(group => group.status === 'approved');
 
+  // Calculate group number for each peer
+  const peerGroupCounts = new Map<string, number>();
+  const groupsWithNumbers = approvedGroups.map((g: ProposedGroup) => {
+    const peerKey = g.peerId;
+    const groupNumber = (peerGroupCounts.get(peerKey) || 0) + 1;
+    peerGroupCounts.set(peerKey, groupNumber);
+    return {
+      ...g,
+      peerGroupNumber: groupNumber,
+    };
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -42,7 +54,7 @@ export default function Matched() {
       <div className="flex items-center gap-2">
         <Users className="w-5 h-5" />
         <span className="text-sm font-medium">
-          {approvedGroups.length} approved group{approvedGroups.length !== 1 ? 's' : ''}
+          {groupsWithNumbers.length} approved group{groupsWithNumbers.length !== 1 ? 's' : ''}
         </span>
       </div>
 
@@ -52,7 +64,7 @@ export default function Matched() {
             <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />
           ))}
         </div>
-      ) : approvedGroups.length === 0 ? (
+      ) : groupsWithNumbers.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No approved groups yet</p>
           <p className="text-sm text-muted-foreground mt-1">
@@ -61,7 +73,7 @@ export default function Matched() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {approvedGroups.map((group) => (
+          {groupsWithNumbers.map((group: any) => (
             <div
               key={group.id}
               className="border rounded-lg p-4 space-y-3"
@@ -70,7 +82,7 @@ export default function Matched() {
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-semibold" data-testid={`text-peer-${group.id}`}>
-                    {group.peerName}
+                    {group.peerName} - Group {group.peerGroupNumber}
                   </h3>
                   <p className="text-sm text-muted-foreground" data-testid={`text-course-${group.id}`}>
                     {group.courseCode}
@@ -85,7 +97,7 @@ export default function Matched() {
                 <div className="text-sm">
                   <p className="font-medium mb-1">Learners:</p>
                   <ul className="space-y-1 ml-2">
-                    {group.learners.map((learner, idx) => (
+                    {group.learners.map((learner: any, idx: number) => (
                       <li key={idx} className="text-sm" data-testid={`text-learner-${group.id}-${idx}`}>
                         {learner.name}
                         {learner.instructor && (
