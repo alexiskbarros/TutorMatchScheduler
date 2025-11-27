@@ -295,57 +295,61 @@ function matchLearnersWithPeers(
   }
   
   // Try to form groups with each peer
+  // Allow each peer to form multiple groups up to their capacity
   for (const peer of eligiblePeers) {
     const maxGroups = peer.groups || 2; // Default to 2 if not specified
-    if (peer.assignedGroups >= maxGroups) {
-      continue;
-    }
     
-    // Try to form the largest possible group (up to 4 learners)
-    const currentAvailable = availableLearners.filter(l => !matched.has(l.email));
-    
-    if (currentAvailable.length === 0) {
-      break;
-    }
-    
-    // Try forming groups of size 4, 3, 2, 1 in that order
-    // Use true combinatorial search to explore different learner subsets
-    let groupFormed = false;
-    
-    for (let groupSize = Math.min(4, currentAvailable.length); groupSize >= 1 && !groupFormed; groupSize--) {
-      // Generate combinations of learners
-      // Limit total combinations tried per group size for efficiency
-      const combinations = generateCombinations(currentAvailable, groupSize, 20);
+    // Keep trying to form groups for this peer until they reach capacity or no learners left
+    while (peer.assignedGroups < maxGroups) {
+      const currentAvailable = availableLearners.filter(l => !matched.has(l.email));
       
-      for (const candidateLearners of combinations) {
-        // Only use instructor if it's required by the learners
-        // instructorMatchRequired is a STRING 'true' or 'false', not a boolean
-        // If instructorMatchRequired is 'false', use empty string so all learners mix freely
-        let instructorName = '';
-        if (instructorMatchRequired === 'true') {
-          instructorName = requiredInstructor || peer.instructor1 || '';
-        }
-        const normalizedInstructor = normalizeInstructorName(instructorName);
+      if (currentAvailable.length === 0) {
+        break;
+      }
+      
+      // Try forming groups of size 4, 3, 2, 1 in that order
+      // Use true combinatorial search to explore different learner subsets
+      let groupFormed = false;
+      
+      for (let groupSize = Math.min(4, currentAvailable.length); groupSize >= 1 && !groupFormed; groupSize--) {
+        // Generate combinations of learners
+        // Limit total combinations tried per group size for efficiency
+        const combinations = generateCombinations(currentAvailable, groupSize, 20);
         
-        const group = tryFormGroup(
-          candidateLearners,
-          peer,
-          courseCode,
-          normalizedInstructor
-        );
-        
-        if (group) {
-          groups.push(group);
-          peer.assignedGroups++;
-          
-          // Mark learners as matched
-          for (const learner of group.learners) {
-            matched.add(learner.email);
+        for (const candidateLearners of combinations) {
+          // Only use instructor if it's required by the learners
+          // If instructorMatchRequired is false, use empty string so all learners mix freely
+          let instructorName = '';
+          if (instructorMatchRequired) {
+            instructorName = requiredInstructor || peer.instructor1 || '';
           }
+          const normalizedInstructor = normalizeInstructorName(instructorName);
           
-          groupFormed = true;
-          break; // Found a group, move to next peer
+          const group = tryFormGroup(
+            candidateLearners,
+            peer,
+            courseCode,
+            normalizedInstructor
+          );
+          
+          if (group) {
+            groups.push(group);
+            peer.assignedGroups++;
+            
+            // Mark learners as matched
+            for (const learner of group.learners) {
+              matched.add(learner.email);
+            }
+            
+            groupFormed = true;
+            break; // Found a group for this peer, try to form another
+          }
         }
+      }
+      
+      // If no group was formed in this iteration, stop trying for this peer
+      if (!groupFormed) {
+        break;
       }
     }
   }
