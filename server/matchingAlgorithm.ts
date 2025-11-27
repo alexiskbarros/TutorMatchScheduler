@@ -352,15 +352,16 @@ function matchLearnersWithPeers(
         }
       }
       
-      // Try forming groups of size 4, 3, 2, 1 in that order
+      // Try forming groups of size 4, 3, 2 in that order
+      // Skip size 1 for now - we'll try to merge single learners later
       // Use true combinatorial search to explore different learner subsets
       let groupFormed = false;
       
-      for (let groupSize = Math.min(4, prioritizedLearners.length); groupSize >= 1 && !groupFormed; groupSize--) {
+      for (let groupSize = Math.min(4, prioritizedLearners.length); groupSize >= 2 && !groupFormed; groupSize--) {
         // Generate combinations of learners
         // Use higher limit for better schedule conflict resolution
         // Smaller group sizes get even more combinations to try
-        const combinationLimit = groupSize === 1 ? 50 : groupSize === 2 ? 100 : 75;
+        const combinationLimit = groupSize === 2 ? 100 : 75;
         const combinations = generateCombinations(prioritizedLearners, groupSize, combinationLimit);
         
         for (const candidateLearners of combinations) {
@@ -394,9 +395,73 @@ function matchLearnersWithPeers(
     }
   }
   
-  // After all matching attempts, set schedule conflict reasons for remaining unmatched learners
+  // Second pass: Try to form size-1 groups and combine them with unmatched learners if possible
+  // This ensures we have at least 2 learners per group when possible
+  const unAttemptedSingleLearners: LearnerWithSchedule[] = [];
   const stillUnmatched = availableLearners.filter(l => !matched.has(l.email));
-  for (const learner of stillUnmatched) {
+  
+  // First, try to form groups of size 1 with very relaxed constraints to identify learners
+  for (const peer of eligiblePeers) {
+    const maxGroups = peer.groups || 2;
+    if (peer.assignedGroups >= maxGroups) continue;
+    
+    const currentAvailable = stillUnmatched.filter(l => !matched.has(l.email) && !unAttemptedSingleLearners.includes(l));
+    if (currentAvailable.length === 0) break;
+    
+    // Try to pair single learners together
+    let attemptedIndex = 0;
+    while (attemptedIndex < currentAvailable.length && peer.assignedGroups < maxGroups) {
+      const pairs: LearnerWithSchedule[][] = [];
+      
+      // Try to pair learners together
+      for (let i = attemptedIndex; i < currentAvailable.length; i++) {
+        const learner1 = currentAvailable[i];
+        for (let j = i + 1; j < currentAvailable.length; j++) {
+          const learner2 = currentAvailable[j];
+          // Check if they have matching instructor (if instructor required)
+          if (instructorMatchRequired) {
+            if (instructorsMatch(learner1.instructor, learner2.instructor)) {
+              pairs.push([learner1, learner2]);
+            }
+          } else {
+            pairs.push([learner1, learner2]);
+          }
+        }
+      }
+      
+      // Try each pair
+      let pairedSomeone = false;
+      for (const pairOfLearners of pairs) {
+        if (peer.assignedGroups >= maxGroups) break;
+        
+        const group = tryFormGroup(
+          pairOfLearners,
+          peer,
+          courseCode,
+          requiredInstructor || ''
+        );
+        
+        if (group) {
+          groups.push(group);
+          peer.assignedGroups++;
+          
+          for (const learner of group.learners) {
+            matched.add(learner.email);
+          }
+          pairedSomeone = true;
+          break;
+        }
+      }
+      
+      if (!pairedSomeone) {
+        attemptedIndex++;
+      }
+    }
+  }
+  
+  // After all matching attempts, set schedule conflict reasons for remaining unmatched learners
+  const finalUnmatched = availableLearners.filter(l => !matched.has(l.email));
+  for (const learner of finalUnmatched) {
     if (!failureReasons.has(learner.email)) {
       // Build a list of peers that were tried
       const triedPeers = eligiblePeers.map(p => `${p.preferredName} ${p.lastName}`).join(', ');
