@@ -389,8 +389,13 @@ export function peerCanTeach(
           return true;
         }
         
+        // If peer's instructor is empty, they can teach any instructor for this course
+        if (!slot.instructor || slot.instructor.trim() === '') {
+          return true;
+        }
+        
         // Otherwise check if instructor matches
-        if (slot.instructor && instructorsMatch(slot.instructor, instructor)) {
+        if (instructorsMatch(slot.instructor, instructor)) {
           return true;
         }
       }
