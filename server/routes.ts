@@ -328,6 +328,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/peers/without-groups - Get learning peers with no assigned groups
+  app.get("/api/peers/without-groups", async (req, res) => {
+    try {
+      // Load all peers from Google Sheets
+      const allPeers = await loadLearningPeers();
+      
+      // Get all groups from the latest matching run
+      const runs = await storage.getAllMatchingRuns();
+      const latestRun = runs[0];
+      
+      let assignedPeerEmails = new Set<string>();
+      if (latestRun) {
+        const allGroups = await storage.getGroupsByRunId(latestRun.id);
+        assignedPeerEmails = new Set(allGroups.map(g => g.peerEmail));
+      }
+      
+      // Filter peers to only those not in any groups
+      const peersWithoutGroups = allPeers.filter(peer => !assignedPeerEmails.has(peer.email));
+      
+      res.json({
+        success: true,
+        peers: peersWithoutGroups,
+      });
+    } catch (error) {
+      console.error('Error fetching peers without groups:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   // GET /api/export/groups - Export groups as CSV
   app.get("/api/export/groups", async (req, res) => {
     try {

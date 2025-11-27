@@ -10,6 +10,7 @@ import RunMatching from "@/pages/RunMatching";
 import ReviewGroups from "@/pages/ReviewGroups";
 import Matched from "@/pages/Matched";
 import Unmatched from "@/pages/Unmatched";
+import PeersWithoutGroups from "@/pages/PeersWithoutGroups";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/not-found";
 
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/review-groups" component={ReviewGroups} />
       <Route path="/matched" component={Matched} />
       <Route path="/unmatched" component={Unmatched} />
+      <Route path="/peers-without-groups" component={PeersWithoutGroups} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>

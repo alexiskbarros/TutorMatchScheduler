@@ -1,4 +1,4 @@
-import { Home, PlayCircle, CheckCircle, CheckSquare, AlertCircle, Settings } from "lucide-react";
+import { Home, PlayCircle, CheckCircle, CheckSquare, AlertCircle, Users2, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -38,6 +38,11 @@ const menuItems = [
     title: "Unmatched Report",
     url: "/unmatched",
     icon: AlertCircle,
+  },
+  {
+    title: "Peers Without Groups",
+    url: "/peers-without-groups",
+    icon: Users2,
   },
   {
     title: "Settings",
