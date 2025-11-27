@@ -98,6 +98,11 @@ Preferred communication style: Simple, everyday language.
 **Instructor Normalization**: Case-insensitive, whitespace-trimmed matching for instructor names (e.g., "Sarah Haughey", "Sarah haughey", "sarah haughey" all treated as same instructor)
 
 **Recent Improvements** (Nov 2025):
+- **Enhanced Instructor Matching** (Nov 27): Improved name normalization to correctly group similar instructor names:
+  - "Pete Jackson" + "Peter Jackson" → Same group
+  - "Dr. Kurosawa" + "Akira Kurosawa" → Same group
+  - All title variations (Dr., Professor, etc.) and common abbreviations (Pete/Peter, etc.) now properly unified
+  - Uses fuzzy matching and abbreviation lookup during grouping phase, not just matching phase
 - **Semester Reset** (Nov 27): "Reset for New Semester" button on Settings page with confirmation dialog to safely clear all matching data while preserving system configuration
 - **Incremental Matching** (Nov 27): "Match New Requests Only" toggle on Run Matching page to process only new learners while skipping already-approved matches, avoiding re-matching and preserving established groups
 - **Matched Groups CSV Export** (Nov 27): Export approved groups to CSV file with all group details, participant information, and scheduling
