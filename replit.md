@@ -98,6 +98,9 @@ Preferred communication style: Simple, everyday language.
 **Instructor Normalization**: Case-insensitive, whitespace-trimmed matching for instructor names (e.g., "Sarah Haughey", "Sarah haughey", "sarah haughey" all treated as same instructor)
 
 **Recent Improvements** (Nov 2025):
+- **Matched Groups CSV Export** (Nov 27): Export approved groups to CSV file with all group details, participant information, and scheduling
+- **Match Confirmation Email Template** (Nov 27): Integrated professional email template for group notifications with course info, meeting times, and peer learning guidelines
+- **Updated Terminology** (Nov 27): Changed all instances of "tutors" to "Learning Peers" throughout platform for consistency
 - **Peers Without Groups Page** (Nov 27): New administrative page to view all learning peers without assigned groups, with search functionality
 - **Manual Placement Modal** (Nov 27): Modal dialog allowing assignment of unmatched learners to existing groups from Matched or Review Groups pages
 - **Specific Constraint Failure Reasons** (Nov 26): Unmatched participants now show exactly why they weren't matched:
