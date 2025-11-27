@@ -302,6 +302,37 @@ export function normalizeInstructorName(name: string): string {
   return normalized;
 }
 
+// Create a canonical instructor name for grouping that handles abbreviations
+// This ensures "Pete Jackson" and "Peter Jackson" are treated as the same instructor
+export function getCanonicalInstructorName(name: string): string {
+  const normalized = normalizeInstructorName(name);
+  if (!normalized) return '';
+  
+  const parts = normalized.split(' ');
+  if (parts.length === 0) return normalized;
+  
+  // Normalize first name if it's a common abbreviation
+  const firstName = parts[0];
+  const abbrev = firstNameAbbreviations[firstName] || [];
+  
+  // Use the longest form of the name (e.g., "peter" instead of "pete")
+  let canonicalFirstName = firstName;
+  for (const variant of abbrev) {
+    if (variant.length > canonicalFirstName.length) {
+      canonicalFirstName = variant;
+    }
+  }
+  
+  // Also check if firstName is in the values of abbreviations (e.g., "peter" in abbrev["pete"])
+  for (const [key, values] of Object.entries(firstNameAbbreviations)) {
+    if (values.includes(firstName) && key.length > canonicalFirstName.length) {
+      canonicalFirstName = key;
+    }
+  }
+  
+  return [canonicalFirstName, ...parts.slice(1)].join(' ');
+}
+
 // Check if two instructor names match (accounting for variations)
 export function instructorsMatch(name1: string, name2: string): boolean {
   const norm1 = normalizeInstructorName(name1);

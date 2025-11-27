@@ -16,6 +16,7 @@ import {
   instructorsMatch,
   peerCanTeach,
   normalizeInstructorName,
+  getCanonicalInstructorName,
 } from './matchingUtils';
 
 interface MatchingInput {
@@ -227,12 +228,12 @@ function groupByInstructor(
   const grouped: Record<string, LearnerWithSchedule[]> = {};
   
   for (const learner of learners) {
-    // Normalize instructor name to handle case sensitivity
-    const normalizedInstructor = normalizeInstructorName(learner.instructor);
-    if (!grouped[normalizedInstructor]) {
-      grouped[normalizedInstructor] = [];
+    // Use canonical instructor name to handle abbreviations (Pete/Peter, etc.)
+    const canonicalInstructor = getCanonicalInstructorName(learner.instructor);
+    if (!grouped[canonicalInstructor]) {
+      grouped[canonicalInstructor] = [];
     }
-    grouped[normalizedInstructor].push(learner);
+    grouped[canonicalInstructor].push(learner);
   }
   
   return grouped;
