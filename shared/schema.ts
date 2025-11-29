@@ -27,6 +27,17 @@ export const users = pgTable("users", {
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
+// Allowed emails table for access control
+export const allowedEmails = pgTable("allowed_emails", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull().unique(),
+  addedBy: varchar("added_by"),
+  addedAt: timestamp("added_at").defaultNow(),
+});
+
+export type AllowedEmail = typeof allowedEmails.$inferSelect;
+export type InsertAllowedEmail = typeof allowedEmails.$inferInsert;
+
 // Time slot format: "0830-0950"
 export const timeSlotSchema = z.object({
   start: z.string(), // "08:30"
