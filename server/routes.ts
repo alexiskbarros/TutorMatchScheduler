@@ -677,6 +677,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/allowed-emails - Get all allowed emails
+  app.get("/api/admin/allowed-emails", isAuthenticated, async (req, res) => {
+    try {
+      const emails = await storage.getAllowedEmails();
+      res.json(emails);
+    } catch (error) {
+      console.error('Error fetching allowed emails:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // POST /api/admin/allowed-emails - Add a new allowed email
+  app.post("/api/admin/allowed-emails", isAuthenticated, async (req: any, res) => {
+    try {
+      const { email } = req.body;
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Email is required',
+        });
+      }
+
+      // Get the current user's email as addedBy
+      const addedBy = req.user?.claims?.email || 'unknown';
+      
+      const newEmail = await storage.addAllowedEmail(email, addedBy);
+      res.json(newEmail);
+    } catch (error: any) {
+      console.error('Error adding allowed email:', error);
+      // Handle duplicate email error
+      if (error.code === '23505') {
+        return res.status(400).json({
+          success: false,
+          error: 'This email is already on the allowlist',
+        });
+      }
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // DELETE /api/admin/allowed-emails/:id - Remove an allowed email
+  app.delete("/api/admin/allowed-emails/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.removeAllowedEmail(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error removing allowed email:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
