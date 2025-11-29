@@ -2,9 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { CheckCircle, Database, Clock, Users, GraduationCap, Layers, Settings2, Trash2 } from "lucide-react";
+import { CheckCircle, Database, Clock, Users, GraduationCap, Layers, Settings2, Trash2, Shield, Plus, X, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
@@ -16,6 +17,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+interface AllowedEmail {
+  id: string;
+  email: string;
+  addedBy: string | null;
+  addedAt: string | null;
+}
 
 interface SettingsResponse {
   success: boolean;
@@ -45,9 +53,14 @@ interface SettingsResponse {
 
 export default function Settings() {
   const [showResetDialog, setShowResetDialog] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
   const { toast } = useToast();
   const { data, isLoading } = useQuery<SettingsResponse>({
     queryKey: ['/api/settings'],
+  });
+
+  const { data: allowedEmails, isLoading: emailsLoading } = useQuery<AllowedEmail[]>({
+    queryKey: ['/api/admin/allowed-emails'],
   });
 
   const settings = data?.settings;
@@ -76,6 +89,60 @@ export default function Settings() {
       });
     },
   });
+
+  const addEmailMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const response = await apiRequest('POST', '/api/admin/allowed-emails', { email });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add email');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      setNewEmail('');
+      toast({
+        title: "Email Added",
+        description: "The email has been added to the allowlist.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/allowed-emails'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeEmailMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest('DELETE', `/api/admin/allowed-emails/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Email Removed",
+        description: "The email has been removed from the allowlist.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/allowed-emails'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove email. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newEmail.trim()) {
+      addEmailMutation.mutate(newEmail.trim());
+    }
+  };
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':').map(Number);
@@ -155,6 +222,81 @@ export default function Settings() {
               <p className="text-xs text-muted-foreground">
                 Data source connection is managed through Replit Connectors. Contact your administrator to modify connection settings.
               </p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-access-control">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Access Control</CardTitle>
+              </div>
+              <CardDescription>
+                Manage which email addresses can access this system
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <form onSubmit={handleAddEmail} className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="Enter email address..."
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  data-testid="input-add-email"
+                  className="flex-1"
+                />
+                <Button
+                  type="submit"
+                  disabled={addEmailMutation.isPending || !newEmail.trim()}
+                  data-testid="button-add-email"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {addEmailMutation.isPending ? "Adding..." : "Add"}
+                </Button>
+              </form>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Allowed Emails ({allowedEmails?.length || 0})
+                </p>
+                {emailsLoading ? (
+                  <div className="animate-pulse space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-10 bg-muted rounded" />
+                    ))}
+                  </div>
+                ) : allowedEmails && allowedEmails.length > 0 ? (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {allowedEmails.map((email) => (
+                      <div
+                        key={email.id}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        data-testid={`email-item-${email.id}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-sm truncate">{email.email}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeEmailMutation.mutate(email.id)}
+                          disabled={removeEmailMutation.isPending}
+                          data-testid={`button-remove-email-${email.id}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No emails in allowlist. Add emails above to grant access.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
 

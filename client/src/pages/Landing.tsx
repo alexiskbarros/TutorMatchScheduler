@@ -1,8 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, CheckCircle, ArrowRight } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Users, Calendar, CheckCircle, ArrowRight, ShieldX } from "lucide-react";
 
 export default function Landing() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const accessDenied = urlParams.get('error') === 'access_denied';
+  
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b px-6 py-4">
@@ -21,6 +25,18 @@ export default function Landing() {
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6 py-12">
+        {accessDenied && (
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 w-full max-w-lg px-4">
+            <Alert variant="destructive" data-testid="alert-access-denied">
+              <ShieldX className="h-4 w-4" />
+              <AlertTitle>Access Denied</AlertTitle>
+              <AlertDescription>
+                Your email is not authorized to access this system. Please contact the administrator 
+                to request access.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl font-bold tracking-tight mb-4">
             Semester Volunteer Matching System
