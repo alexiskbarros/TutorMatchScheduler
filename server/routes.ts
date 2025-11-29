@@ -9,10 +9,26 @@ import {
 } from "./googleSheets";
 import { runMatchingAlgorithm } from "./matchingAlgorithm";
 import { generateMatchConfirmationEmail } from "./emailTemplate";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication
+  await setupAuth(app);
+
+  // Auth endpoint - get current user
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   // POST /api/matching-runs - Start a new matching run
-  app.post("/api/matching-runs", async (req, res) => {
+  app.post("/api/matching-runs", isAuthenticated, async (req, res) => {
     try {
       const { newRequestsOnly } = req.body || {};
       console.log(`Starting new matching run... (newRequestsOnly: ${newRequestsOnly})`);
@@ -107,7 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/matching-runs/:id - Get matching run details
-  app.get("/api/matching-runs/:id", async (req, res) => {
+  app.get("/api/matching-runs/:id", isAuthenticated, async (req, res) => {
     try {
       const run = await storage.getMatchingRun(req.params.id);
       
@@ -138,7 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/matching-runs - Get all matching runs
-  app.get("/api/matching-runs", async (req, res) => {
+  app.get("/api/matching-runs", isAuthenticated, async (req, res) => {
     try {
       const runs = await storage.getAllMatchingRuns();
       
@@ -162,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/groups - Get all groups (pending and approved)
-  app.get("/api/groups", async (req, res) => {
+  app.get("/api/groups", isAuthenticated, async (req, res) => {
     try {
       const runs = await storage.getAllMatchingRuns();
       
@@ -207,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/groups/bulk-approve - Bulk approve multiple groups
-  app.post("/api/groups/bulk-approve", async (req, res) => {
+  app.post("/api/groups/bulk-approve", isAuthenticated, async (req, res) => {
     try {
       const { groupIds } = req.body;
       
@@ -259,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/groups/:id/approve - Approve a group
-  app.post("/api/groups/:id/approve", async (req, res) => {
+  app.post("/api/groups/:id/approve", isAuthenticated, async (req, res) => {
     try {
       const group = await storage.getGroup(req.params.id);
       
@@ -308,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/groups/:id/reject - Reject and re-queue a group
-  app.post("/api/groups/:id/reject", async (req, res) => {
+  app.post("/api/groups/:id/reject", isAuthenticated, async (req, res) => {
     try {
       const group = await storage.getGroup(req.params.id);
       
@@ -340,7 +356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/groups/:id - Update a group manually
-  app.patch("/api/groups/:id", async (req, res) => {
+  app.patch("/api/groups/:id", isAuthenticated, async (req, res) => {
     try {
       const group = await storage.getGroup(req.params.id);
       
@@ -369,7 +385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/unmatched - Get unmatched participants
-  app.get("/api/unmatched", async (req, res) => {
+  app.get("/api/unmatched", isAuthenticated, async (req, res) => {
     try {
       const participants = await storage.getLatestUnmatchedParticipants();
       
@@ -387,7 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/peers/without-groups - Get learning peers with no assigned groups
-  app.get("/api/peers/without-groups", async (req, res) => {
+  app.get("/api/peers/without-groups", isAuthenticated, async (req, res) => {
     try {
       // Load all peers from Google Sheets
       const allPeers = await loadLearningPeers();
@@ -419,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/export/groups - Export groups as CSV
-  app.get("/api/export/groups", async (req, res) => {
+  app.get("/api/export/groups", isAuthenticated, async (req, res) => {
     try {
       const runs = await storage.getAllMatchingRuns();
       const latestRun = runs[0];
@@ -464,7 +480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/export/unmatched - Export unmatched participants as CSV
-  app.get("/api/export/unmatched", async (req, res) => {
+  app.get("/api/export/unmatched", isAuthenticated, async (req, res) => {
     try {
       const participants = await storage.getLatestUnmatchedParticipants();
       
@@ -493,7 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/dashboard-stats - Get aggregated dashboard statistics
-  app.get("/api/dashboard-stats", async (req, res) => {
+  app.get("/api/dashboard-stats", isAuthenticated, async (req, res) => {
     try {
       const runs = await storage.getAllMatchingRuns();
       const latestRun = runs[0]; // Most recent run
@@ -556,7 +572,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/sync-data - Sync data from Google Sheets
-  app.post("/api/sync-data", async (req, res) => {
+  app.post("/api/sync-data", isAuthenticated, async (req, res) => {
     try {
       console.log('Syncing data from Google Sheets...');
       
@@ -588,7 +604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/settings - Get current system settings and status
-  app.get("/api/settings", async (req, res) => {
+  app.get("/api/settings", isAuthenticated, async (req, res) => {
     try {
       const runs = await storage.getAllMatchingRuns();
       const latestRun = runs[0];
@@ -639,7 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/reset-semester - Reset all matching data for new semester
-  app.post("/api/admin/reset-semester", async (req, res) => {
+  app.post("/api/admin/reset-semester", isAuthenticated, async (req, res) => {
     try {
       console.log('Resetting semester data...');
       await storage.resetSemester();
