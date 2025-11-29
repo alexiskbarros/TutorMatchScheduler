@@ -9,12 +9,14 @@ import type {
   InsertMatchingRun,
   User,
   UpsertUser,
+  AllowedEmail,
 } from "@shared/schema";
 import { 
   matchingRunsTable, 
   proposedGroupsTable, 
   unmatchedParticipantsTable,
-  users 
+  users,
+  allowedEmails,
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 import ws from "ws";
@@ -359,5 +361,42 @@ export class DbStorage implements IStorage {
     
     // Delete all matching runs
     await this.db.delete(matchingRunsTable);
+  }
+
+  // Allowed Emails operations
+  async getAllowedEmails(): Promise<AllowedEmail[]> {
+    return await this.db
+      .select()
+      .from(allowedEmails)
+      .orderBy(desc(allowedEmails.addedAt));
+  }
+
+  async isEmailAllowed(email: string): Promise<boolean> {
+    const normalizedEmail = email.toLowerCase().trim();
+    const results = await this.db.select().from(allowedEmails);
+    
+    for (const allowed of results) {
+      if (allowed.email.toLowerCase().trim() === normalizedEmail) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async addAllowedEmail(email: string, addedBy?: string): Promise<AllowedEmail> {
+    const [result] = await this.db
+      .insert(allowedEmails)
+      .values({
+        email: email.toLowerCase().trim(),
+        addedBy: addedBy || null,
+      })
+      .returning();
+    return result;
+  }
+
+  async removeAllowedEmail(id: string): Promise<void> {
+    await this.db
+      .delete(allowedEmails)
+      .where(eq(allowedEmails.id, id));
   }
 }

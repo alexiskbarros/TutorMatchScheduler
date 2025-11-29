@@ -6,6 +6,7 @@ import type {
   InsertMatchingRun,
   User,
   UpsertUser,
+  AllowedEmail,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -41,6 +42,12 @@ export interface IStorage {
   setUnmatchedParticipants(runId: string, participants: UnmatchedParticipant[]): Promise<void>;
   getUnmatchedParticipants(runId: string): Promise<UnmatchedParticipant[]>;
   getLatestUnmatchedParticipants(): Promise<UnmatchedParticipant[]>;
+  
+  // Allowed Emails (access control)
+  getAllowedEmails(): Promise<AllowedEmail[]>;
+  isEmailAllowed(email: string): Promise<boolean>;
+  addAllowedEmail(email: string, addedBy?: string): Promise<AllowedEmail>;
+  removeAllowedEmail(id: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -49,6 +56,7 @@ export class MemStorage implements IStorage {
   private unmatchedByRun: Map<string, UnmatchedParticipant[]>;
   private groupsByRun: Map<string, string[]>; // runId -> groupIds[]
   private users: Map<string, User>;
+  private allowedEmailsMap: Map<string, AllowedEmail>;
 
   constructor() {
     this.matchingRuns = new Map();
@@ -56,6 +64,7 @@ export class MemStorage implements IStorage {
     this.unmatchedByRun = new Map();
     this.groupsByRun = new Map();
     this.users = new Map();
+    this.allowedEmailsMap = new Map();
   }
 
   // User operations (required for Replit Auth)
@@ -218,6 +227,38 @@ export class MemStorage implements IStorage {
     this.proposedGroups.clear();
     this.unmatchedByRun.clear();
     this.groupsByRun.clear();
+  }
+
+  // Allowed Emails operations
+  async getAllowedEmails(): Promise<AllowedEmail[]> {
+    return Array.from(this.allowedEmailsMap.values());
+  }
+
+  async isEmailAllowed(email: string): Promise<boolean> {
+    const normalizedEmail = email.toLowerCase().trim();
+    const allowedList = Array.from(this.allowedEmailsMap.values());
+    for (const allowed of allowedList) {
+      if (allowed.email.toLowerCase().trim() === normalizedEmail) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async addAllowedEmail(email: string, addedBy?: string): Promise<AllowedEmail> {
+    const id = randomUUID();
+    const allowedEmail: AllowedEmail = {
+      id,
+      email: email.toLowerCase().trim(),
+      addedBy: addedBy || null,
+      addedAt: new Date(),
+    };
+    this.allowedEmailsMap.set(id, allowedEmail);
+    return allowedEmail;
+  }
+
+  async removeAllowedEmail(id: string): Promise<void> {
+    this.allowedEmailsMap.delete(id);
   }
 }
 
