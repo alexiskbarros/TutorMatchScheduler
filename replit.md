@@ -98,6 +98,12 @@ Preferred communication style: Simple, everyday language.
 **Instructor Normalization**: Case-insensitive, whitespace-trimmed matching for instructor names (e.g., "Sarah Haughey", "Sarah haughey", "sarah haughey" all treated as same instructor)
 
 **Recent Improvements** (Nov 2025):
+- **Email Allowlist Access Control** (Nov 29): Restricts admin access to approved emails only
+  - Database-backed allowlist (allowed_emails table) with CRUD operations
+  - Login verification rejects users not on the allowlist with clear access denied message
+  - Admin UI in Settings page to view, add, and remove allowed emails
+  - Initial allowed emails: plp@mtroyal.ca and ucalgary.ca team members
+  - Audit trail: tracks who added each email and when
 - **Admin Authentication** (Nov 29): Added Replit Auth for secure admin access
   - All API endpoints now require authentication
   - Landing page for unauthenticated users with sign-in button
