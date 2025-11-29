@@ -15,8 +15,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   await setupAuth(app);
 
-  // Auth endpoint - get current user
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Auth endpoint - get current user (NOT protected - allows checking auth status)
+  app.get('/api/auth/user', async (req: any, res) => {
+    if (!req.isAuthenticated() || !req.user?.claims?.sub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);

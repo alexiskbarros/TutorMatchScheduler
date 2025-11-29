@@ -98,6 +98,12 @@ Preferred communication style: Simple, everyday language.
 **Instructor Normalization**: Case-insensitive, whitespace-trimmed matching for instructor names (e.g., "Sarah Haughey", "Sarah haughey", "sarah haughey" all treated as same instructor)
 
 **Recent Improvements** (Nov 2025):
+- **Admin Authentication** (Nov 29): Added Replit Auth for secure admin access
+  - All API endpoints now require authentication
+  - Landing page for unauthenticated users with sign-in button
+  - Login via Google, GitHub, email/password through Replit's OpenID Connect
+  - User sessions stored in PostgreSQL with 1-week TTL
+  - Logout button in header with user avatar display
 - **Enhanced Instructor Matching** (Nov 27): Improved name normalization to correctly group similar instructor names:
   - "Pete Jackson" + "Peter Jackson" → Same group
   - "Dr. Kurosawa" + "Akira Kurosawa" → Same group
