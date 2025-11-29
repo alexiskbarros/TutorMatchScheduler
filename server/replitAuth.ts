@@ -74,9 +74,25 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
+    const claims = tokens.claims();
+    if (!claims) {
+      return verified(null, false, { message: "invalid_claims" });
+    }
+    
+    const email = claims["email"] as string | undefined;
+    if (!email) {
+      return verified(null, false, { message: "no_email" });
+    }
+    
+    // Check if email is on the allowlist
+    const isAllowed = await storage.isEmailAllowed(email);
+    if (!isAllowed) {
+      return verified(null, false, { message: "access_denied" });
+    }
+    
     const user = {};
     updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
+    await upsertUser(claims);
     verified(null, user);
   };
 
@@ -114,9 +130,23 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/callback", (req, res, next) => {
     ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
+    passport.authenticate(`replitauth:${req.hostname}`, (err: any, user: any, info: any) => {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        // Check for access denied (email not on allowlist)
+        if (info?.message === "access_denied") {
+          return res.redirect("/?error=access_denied");
+        }
+        return res.redirect("/api/login");
+      }
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          return next(loginErr);
+        }
+        return res.redirect("/");
+      });
     })(req, res, next);
   });
 
