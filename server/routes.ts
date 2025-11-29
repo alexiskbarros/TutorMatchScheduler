@@ -358,6 +358,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/groups/:id/unapprove - Send approved group back to review
+  app.post("/api/groups/:id/unapprove", isAuthenticated, async (req, res) => {
+    try {
+      const group = await storage.getGroup(req.params.id);
+      
+      if (!group) {
+        return res.status(404).json({
+          success: false,
+          error: 'Group not found',
+        });
+      }
+
+      if (group.status !== 'approved') {
+        return res.status(400).json({
+          success: false,
+          error: 'Only approved groups can be unapproved',
+        });
+      }
+
+      // Change status back to pending
+      await storage.updateGroupStatus(req.params.id, 'pending');
+      console.log(`Group ${req.params.id} unapproved and sent back to review`);
+
+      res.json({
+        success: true,
+        message: 'Group sent back to review',
+        group: await storage.getGroup(req.params.id),
+      });
+    } catch (error) {
+      console.error('Error unapproving group:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   // PATCH /api/groups/:id - Update a group manually
   app.patch("/api/groups/:id", isAuthenticated, async (req, res) => {
     try {
