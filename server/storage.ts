@@ -4,10 +4,16 @@ import type {
   UnmatchedParticipant,
   InsertProposedGroup,
   InsertMatchingRun,
+  User,
+  UpsertUser,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
+  // User operations (required for Replit Auth)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
   // Matching Runs
   createMatchingRun(run: InsertMatchingRun): Promise<MatchingRun>;
   getMatchingRun(id: string): Promise<MatchingRun | undefined>;
@@ -42,12 +48,34 @@ export class MemStorage implements IStorage {
   private proposedGroups: Map<string, ProposedGroup>;
   private unmatchedByRun: Map<string, UnmatchedParticipant[]>;
   private groupsByRun: Map<string, string[]>; // runId -> groupIds[]
+  private users: Map<string, User>;
 
   constructor() {
     this.matchingRuns = new Map();
     this.proposedGroups = new Map();
     this.unmatchedByRun = new Map();
     this.groupsByRun = new Map();
+    this.users = new Map();
+  }
+
+  // User operations (required for Replit Auth)
+  async getUser(id: string): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const existing = userData.id ? this.users.get(userData.id) : undefined;
+    const user: User = {
+      id: userData.id || randomUUID(),
+      email: userData.email || null,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
+      profileImageUrl: userData.profileImageUrl || null,
+      createdAt: existing?.createdAt || new Date(),
+      updatedAt: new Date(),
+    };
+    this.users.set(user.id, user);
+    return user;
   }
 
   // Matching Runs

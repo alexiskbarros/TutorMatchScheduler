@@ -7,11 +7,14 @@ import type {
   UnmatchedParticipant,
   InsertProposedGroup,
   InsertMatchingRun,
+  User,
+  UpsertUser,
 } from "@shared/schema";
 import { 
   matchingRunsTable, 
   proposedGroupsTable, 
-  unmatchedParticipantsTable 
+  unmatchedParticipantsTable,
+  users 
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 import ws from "ws";
@@ -27,6 +30,27 @@ export class DbStorage implements IStorage {
     }
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     this.db = drizzle(pool);
+  }
+
+  // User operations (required for Replit Auth)
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await this.db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await this.db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 
   // Matching Runs
