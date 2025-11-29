@@ -1,9 +1,11 @@
 import { GroupCard } from "@/components/GroupCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { ProposedGroup } from "@shared/schema";
-import { Users, Mail, Download } from "lucide-react";
+import { Users, Mail, Download, Undo2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 function formatTimeSlot(group: ProposedGroup): string {
   const dayMap: Record<string, string> = {
@@ -84,8 +86,30 @@ function exportToCSV(groups: any[]): void {
 }
 
 export default function Matched() {
+  const { toast } = useToast();
+  
   const { data: groupsData, isLoading } = useQuery<{ success: boolean; groups: ProposedGroup[] }>({
     queryKey: ['/api/groups'],
+  });
+
+  const unapproveMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      return apiRequest('POST', `/api/groups/${groupId}/unapprove`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
+      toast({
+        title: 'Group sent to review',
+        description: 'The group has been moved back to Review Groups.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to unapprove group',
+        variant: 'destructive',
+      });
+    },
   });
 
   const approvedGroups = (groupsData?.groups || []).filter(group => group.status === 'approved');
@@ -189,17 +213,29 @@ export default function Matched() {
                   {formatTimeSlot(group)}
                 </p>
                 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    window.location.href = getGroupEmailLink(group);
-                  }}
-                  data-testid={`button-email-group-${group.id}`}
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email Group
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      window.location.href = getGroupEmailLink(group);
+                    }}
+                    data-testid={`button-email-group-${group.id}`}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Email Group
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => unapproveMutation.mutate(group.id)}
+                    disabled={unapproveMutation.isPending}
+                    data-testid={`button-unapprove-${group.id}`}
+                  >
+                    <Undo2 className="h-4 w-4 mr-2" />
+                    Send to Review
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
