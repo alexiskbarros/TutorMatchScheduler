@@ -1,156 +1,179 @@
-# ENTI 633 Generative AI and Prompting
+# TutorMatch Scheduler  
+*ENTI 633 – Generative AI & Prompting (Haskayne School of Business, University of Calgary)*
 
-***
+TutorMatch Scheduler is a full-stack web application that automates the complex scheduling and matching process used by university Peer Learning Programs. It uses a constraint-based matching engine, driven by real course, instructor, and schedule data from Google Sheets, to propose optimized study groups for learners and volunteer Learning Peers.
 
-# Tutor Match Scheduler
+This project was developed as part of **ENTI 633 – Generative AI and Prompting** (MBA program at the **Haskayne School of Business, University of Calgary**), instructed by **Professor Andishe Ashjari**.
 
-Our mission is to accelerate student success by using intelligent automation to match learners with qualified peer tutors—quickly, fairly, and at scale—so that every student can access timely, impactful academic support and realize their full learning potential.
+---
 
-## Table of Contents
-- About
-- Features
-- Problem Statement
-- Tech Stack
-- Getting Started
-- Usage
-- Testing
-- Repository Structure
-- Contributors
-- License
+## 👥 Team Members
+- Alexis Osorio de Barros  
+- Carina Hickey  
+- Jaydon Cornell  
+- Natasha Grandy  
+- Jordyn Caron  
 
-***
+---
 
-## About
+## 📌 What the App Does
+Each semester, the Peer Learning Program must match hundreds of learners with volunteer Learning Peers. Historically, this process has taken **2–3 weeks** due to:
 
-This project was developed by MBA students at the Haskayne School of Business, University of Calgary, as part of ENTI 633 L01 (Fall 2025). TutorMatchScheduler is a purpose-built web app that transforms the Peer Learning Program’s group matching process. It leverages generative AI to rapidly, fairly, and accurately match hundreds of students (“Learners”) with volunteer Learning Peers (tutors) each semester. By automating a process that currently takes weeks, it maximizes learning impact for students, increases operational efficiency, and preserves the program’s unique human-centered mentorship model.
+- Instructor-specific matching  
+- Course alignment  
+- Complex and conflicting schedules  
+- Travel buffers between classes  
+- Limited Learning Peer capacity  
 
-## Problem Statement
+TutorMatch Scheduler replaces this slow manual workflow by:
 
-Existing matching processes take 2–3 weeks due to high demand, complex eligibility/instructor rules, and limited staff resources. Each week of delay means missed learning opportunities—and evidence shows students gain most from 8+ uninterrupted sessions.
-No off-the-shelf system has met these needs, so a tailored solution is essential.
-TutorMatchScheduler is designed to address these specific constraints, maximizing session availability and matching speed while maintaining academic integrity.
+- Importing learner and peer data from a Google Sheet  
+- Applying strict matching constraints  
+- Generating optimized study groups  
+- Displaying results in an administrative dashboard  
+- Listing unmatched learners with clear explanations  
+- Allowing staff to approve or reject proposed groups  
 
-## Features
+Live demo: https://tutor-match-scheduler.replit.app/
 
-- **[Feature 1]:** Automated constraint-based group matching
-- **[Feature 2]:** Course, instructor, and availability filtering
-- **[Feature 3]:** Peer and learner profile management (Google Sheets friendly)
-- **[Feature 4]:** Staff dashboard for review and overrides
-- **[Feature 5]:** Transparent reporting and constraint failure alerts
+---
 
-## Tech Stack
+## 🧠 Key Features
 
-This application uses industry-standard, AI-friendly technologies for rapid prototyping and reliable deployment:
+### 🔄 Constraint-Based Matching Engine
+- Groups of **1–4 learners** in the same course  
+- Honors **Instructor Match Required**  
+- Availability window checking (08:00–20:00)  
+- **5-minute travel buffer** between classes and sessions  
+- Learning Peer capacity limits  
+- Maximizes total learners matched  
 
-**Frontend:** React with TypeScript, Vite
+### 📅 Google Sheets Integration
+- Loads learners and Learning Peers from a shared Sheet  
+- Parses schedules into time blocks  
+- Normalizes instructor name formats  
+- Supports multi-course tutor expertise  
 
-**UI Components:** shadcn/ui (Radix UI primitives), Tailwind CSS
+### 🧑‍💻 Administrator Dashboard
+- One-click matching  
+- Review, approve, or reject proposed groups  
+- Re-queue rejected learners  
+- View unmatched learners + specific reasons  
 
-**Routing:** Wouter
+### ✉️ Group Notification Emails (MVP)
+- Sends a single unified email to all group members  
 
-**State Management:** TanStack Query (React Query)
+---
 
-**Backend:** Node.js with Express.js (TypeScript)
+## 🛠️ Tech Stack & Dependencies
 
-**Database:** PostgreSQL (Neon) with Drizzle ORM
+### Frontend (`client/`)
+- React  
+- TypeScript  
+- Vite  
+- Tailwind CSS  
+- shadcn/ui  
+- Radix Primitives  
+- TanStack Query  
+- Wouter Router  
 
-**Data Integration:** Google Sheets API via Replit Connectors
+### Backend (`server/`)
+- Node.js  
+- Express  
+- Matching Engine Logic  
+- Google Sheets API  
 
-**Icons:** Lucide React
+### Other
+- Shared utilities in `/shared`  
+- Light ORM config in `/db`  
+- Replit (development + deployment)  
+- Git + GitHub  
+- ChatGPT + Gemini during development  
 
-**Development & Deployment:** Replit
+---
 
-**Version Control:** Git
+## 🚀 Getting Started
 
-***
+### 1. Clone the Repository
+    git clone https://github.com/alexiskbarros/TutorMatchScheduler.git
+    cd TutorMatchScheduler
 
-## Getting Started
+### 2. Install Dependencies
+    npm install
 
-**Prerequisites:**  
-Node.js (v18 or higher recommended)
+### 3. Run the App
+    npm run dev
 
-Git
+Open the printed local URL to launch the app.
 
-A Replit account (for AI/automation and cloud running)
+---
 
-Access to Google Sheets with test data
+## 📁 Repository Structure
 
-**Setup Steps:**
-```bash
-# Clone this repository
-git clone https://github.com/your-org/your-app.git
-cd your-app
+    client/                      # React frontend
+      src/                       # Components, pages, logic
+      public/                    # Static files
+      index.html                 # Frontend entry point
 
-# Install dependencies
-npm install
+    server/                      # Node.js backend
+      matching/                  # Group matching engine
+      sheets/                    # Google Sheets ingestion & cleaning
+      routes/                    # API endpoints
+      index.js                   # Server entry point
 
-# Start development server
-npm start
+    shared/                      # Shared utilities
+    db/                          # ORM (light use)
+    attached_assets/             # Replit assets
+    .local/state/replit/agent/   # Replit internal files
 
-# The app will run at http://localhost:3000/
-```
+    package.json                 # Dependencies and scripts
+    LICENSE                      # MIT License
+    README.md                    # This document
 
-_For Replit cloud development:_  
-- Fork the repo in Replit
-- Click the “Run” button
+---
 
-***
+## 🧪 Manual Testing
 
-## Usage
+### ✔ Basic Matching
+- Load sample learners & peers  
+- Run the matching engine  
+- Confirm groups appear correctly  
 
-- Open the app in your browser at `http://localhost:3000/` (or cloud link if deployed).
+### ✔ Instructor Matching
+- Mark a learner as “Instructor Match Required”  
+- Verify matches only assign correct instructors  
 
-Workflow for new users:
-- Log in as staff, peer, or learner (depending on your role).
-- For staff/admin:
-Upload current Google Sheets containing Learning Peer and Learner availability, group limits, and instructor/course details.
-Trigger the Automated Matching Engine from the dashboard.
-Review and approve or adjust proposed groups and schedules.
-- For students (learners): Submit a course support request form. Receive notification of your assigned group and meeting time.
-- For peers: View your assigned group(s) and confirmed schedule.
-  
-- Troubleshooting:
-If the dashboard doesn’t load, check your console for errors or verify your Google Sheet formatting matches the provided template (see /docs/setup.md).
+### ✔ Scheduling Conflicts
+- Create a learner with no overlapping times  
+- Ensure they appear in **Unmatched** with a clear reason  
 
-- Screenshots:  
-  _Add UI screenshots here as the app develops._
+### ✔ Learning Peer Capacity
+- Add large numbers of learners tied to one Peer  
+- Ensure Peer does not exceed allowed max groups  
 
-***
+---
 
-## Testing
+## 📝 Blog Post & Demo Video  
+(Links added after publishing)
 
-**Manual Testing:**  
-- After installation, run through the full workflow: import test data, run the matcher, and verify group assignments in the admin dashboard.
+- **LinkedIn Blog Post**  
+- **3–5 Minute Demo Video (Narrated Screen Recording)**  
 
-***
+---
 
-## Repository Structure
+## 🤝 Contributors
 
-```plaintext
-/Sources        # Source code (components, pages, logic)
-/Public         # Static assets (images, icons)
-/Documentation  # Documentation (extended guides, meeting notes)
-/Data           # Data sets or API config (if used)
-/tests          # Automated tests (if used)
-README.md       # This file
-```
+- **Jaydon Cornell** – Development Lead  
+- **Natasha Grandy** – Data & Matching Logic  
+- **Carina Hickey** – Product Direction  
+- **Alexis Osorio de Barros** – Repository Documentation & Management  
+- **Jordyn Caron** – Communications & Media  
 
-***
+Haskayne School of Business  
+University of Calgary  
 
-## Contributors
+---
 
-- **Jaydon** – Lead Developer  
-- **Natasha** – Data Analyst  
-- **Carina** – Product Owner  
-- **Alexis** – Repository Manager  
-- **Jordyn** – Communications & Media Lead  
+## 📄 License
 
-Haskayne School of Business, University of Calgary
-
-***
-
-## License
-
-Open-source under the [MIT License](LICENSE).
-
-***
+This project is released under the **MIT License**.
