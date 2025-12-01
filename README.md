@@ -157,7 +157,7 @@ Open the printed local URL to launch the app.
 (Links added after publishing)
 
 - **LinkedIn Blog Post**  
-- **3–5 Minute Demo Video (Narrated Screen Recording)**  
+- **3 Minute Demo Video (Narrated Screen Recording):** https://www.youtube.com/watch?v=Upvo5Dqgb0c 
 
 ---
 
