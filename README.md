@@ -1,4 +1,4 @@
-# TutorMatch Scheduler  
+# Tutor Match Scheduler  
 *ENTI 633 – Generative AI & Prompting (Haskayne School of Business, University of Calgary)*
 
 TutorMatch Scheduler is a full-stack web application that automates the complex scheduling and matching process used by university Peer Learning Programs. It uses a constraint-based matching engine, driven by real course, instructor, and schedule data from Google Sheets, to propose optimized study groups for learners and volunteer Learning Peers.
@@ -163,11 +163,11 @@ Open the printed local URL to launch the app.
 
 ## 🤝 Contributors
 
-- **Jaydon Cornell** – Development Lead  
-- **Natasha Grandy** – Data & Matching Logic  
-- **Carina Hickey** – Product Direction  
-- **Alexis Osorio de Barros** – Repository Documentation & Management  
-- **Jordyn Caron** – Communications & Media  
+- **Jaydon Cornell** – Lead Developer
+- **Natasha Grandy** – Data Analyst
+- **Carina Hickey** – Product Owner 
+- **Alexis Osorio de Barros** – Repository Manager 
+- **Jordyn Caron** – Communications & Media Lead
 
 Haskayne School of Business  
 University of Calgary  
