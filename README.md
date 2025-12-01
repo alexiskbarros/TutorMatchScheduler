@@ -7,7 +7,7 @@ This project was developed as part of **ENTI 633 – Generative AI and Prompting
 
 ---
 
-## 👥 Team Members
+## Team Members
 - Alexis Osorio de Barros  
 - Carina Hickey  
 - Jaydon Cornell  
@@ -16,7 +16,7 @@ This project was developed as part of **ENTI 633 – Generative AI and Prompting
 
 ---
 
-## 📌 What the App Does
+## What the App Does
 Each semester, the Peer Learning Program must match hundreds of learners with volunteer Learning Peers. Historically, this process has taken **2–3 weeks** due to:
 
 - Instructor-specific matching  
@@ -38,9 +38,9 @@ Live app: https://tutor-match-scheduler.replit.app/
 
 ---
 
-## 🧠 Key Features
+## Key Features
 
-### 🔄 Constraint-Based Matching Engine
+### Constraint-Based Matching Engine
 - Groups of **1–4 learners** in the same course  
 - Honors **Instructor Match Required**  
 - Availability window checking (08:00–20:00)  
@@ -48,24 +48,24 @@ Live app: https://tutor-match-scheduler.replit.app/
 - Learning Peer capacity limits  
 - Maximizes total learners matched  
 
-### 📅 Google Sheets Integration
+### Google Sheets Integration
 - Loads learners and Learning Peers from a shared Sheet  
 - Parses schedules into time blocks  
 - Normalizes instructor name formats  
 - Supports multi-course tutor expertise  
 
-### 🧑‍💻 Administrator Dashboard
+### Administrator Dashboard
 - One-click matching  
 - Review, approve, or reject proposed groups  
 - Re-queue rejected learners  
 - View unmatched learners + specific reasons  
 
-### ✉️ Group Notification Emails (MVP)
+### Group Notification Emails (MVP)
 - Sends a single unified email to all group members  
 
 ---
 
-## 🛠️ Tech Stack & Dependencies
+## Tech Stack & Dependencies
 
 ### Frontend (`client/`)
 - React  
@@ -92,7 +92,7 @@ Live app: https://tutor-match-scheduler.replit.app/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone the Repository
     git clone https://github.com/alexiskbarros/TutorMatchScheduler.git
@@ -108,7 +108,7 @@ Open the printed local URL to launch the app.
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
     client/                      # React frontend
       src/                       # Components, pages, logic
@@ -132,28 +132,28 @@ Open the printed local URL to launch the app.
 
 ---
 
-## 🧪 Manual Testing
+## Manual Testing
 
-### ✔ Basic Matching
+### Basic Matching
 - Load sample learners & peers  
 - Run the matching engine  
 - Confirm groups appear correctly  
 
-### ✔ Instructor Matching
+### Instructor Matching
 - Mark a learner as “Instructor Match Required”  
 - Verify matches only assign correct instructors  
 
-### ✔ Scheduling Conflicts
+### Scheduling Conflicts
 - Create a learner with no overlapping times  
 - Ensure they appear in **Unmatched** with a clear reason  
 
-### ✔ Learning Peer Capacity
+### Learning Peer Capacity
 - Add large numbers of learners tied to one Peer  
 - Ensure Peer does not exceed allowed max groups  
 
 ---
 
-## 📝 Blog Post & Demo Video  
+## Blog Post & Demo Video  
 (Links added after publishing)
 
 - **LinkedIn Blog Post**  
@@ -161,7 +161,7 @@ Open the printed local URL to launch the app.
 
 ---
 
-## 🤝 Contributors
+## Contributors
 
 - **Jaydon Cornell** – Lead Developer
 - **Natasha Grandy** – Data Analyst
@@ -174,7 +174,7 @@ University of Calgary
 
 ---
 
-## 📄 License
+## License
 
 This project is released under the **MIT License**.
 
