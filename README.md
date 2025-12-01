@@ -34,7 +34,7 @@ TutorMatch Scheduler replaces this slow manual workflow by:
 - Listing unmatched learners with clear explanations  
 - Allowing staff to approve or reject proposed groups  
 
-Live demo: https://tutor-match-scheduler.replit.app/
+Live app: https://tutor-match-scheduler.replit.app/
 
 ---
 
