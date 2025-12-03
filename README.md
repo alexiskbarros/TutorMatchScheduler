@@ -154,9 +154,8 @@ Open the printed local URL to launch the app.
 ---
 
 ## Blog Post & Demo Video  
-(Links added after publishing)
 
-- **LinkedIn Blog Post**  
+- **SubStack Blog Post:** https://tutormatchscheduler.substack.com/i/180568628/acknowledgment
 - **3 Minute Demo Video (Narrated Screen Recording):** https://www.youtube.com/watch?v=Upvo5Dqgb0c 
 
 ---
